@@ -1,0 +1,15 @@
+services:
+  sistema-contrato:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sistema-contrato-roboled
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    volumes:
+      # Persiste o banco de dados SQLite e os PDFs gerados no host
+      - ./data:/app/data
