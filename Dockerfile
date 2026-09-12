@@ -43,7 +43,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     PORT=3001 \
-    NODE_ENV=production \
     DATA_DIR=/app/data \
     DATABASE_PATH=/app/data/database.sqlite
 
@@ -53,13 +52,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instala todas as dependências (incluindo Vite e TypeScript necessárias para o build)
-RUN npm install
+RUN npm install --include=dev
 
 # Copia código fonte da aplicação
 COPY . .
 
 # Compila o frontend React (Vite) e o backend TypeScript (tsc)
 RUN npm run build
+
+# Define NODE_ENV para produção em runtime
+ENV NODE_ENV=production
 
 # Cria pasta de dados persistentes para SQLite e PDFs
 RUN mkdir -p /app/data /app/data/contracts /app/data/backups
