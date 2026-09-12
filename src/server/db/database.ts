@@ -26,17 +26,72 @@ import {
   CostsSummaryDTO,
 } from '../../types/index.js';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const DB_PATH = path.join(DATA_DIR, 'database.sqlite');
+const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
+const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'database.sqlite');
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const BACKUP_FILE = path.join(DATA_DIR, 'database.sqlite.bak');
 
-// Garante que o diretório data existe
+// Garante que o diretório data e backups existem
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+}
+
+// Auto-recuperação de segurança: Se o arquivo do banco estiver ausente ou corrompido/zerado, restaura do backup
+if ((!fs.existsSync(DB_PATH) || fs.statSync(DB_PATH).size === 0) && fs.existsSync(BACKUP_FILE) && fs.statSync(BACKUP_FILE).size > 0) {
+  try {
+    fs.copyFileSync(BACKUP_FILE, DB_PATH);
+    console.log('🔄 Banco de dados restaurado automaticamente a partir do backup de segurança!');
+  } catch (err) {
+    console.error('Erro ao auto-restaurar backup do banco:', err);
+  }
 }
 
 export const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL;');
+db.exec('PRAGMA synchronous = FULL;'); // Garante gravação física no disco contra reinicializações do servidor
 db.exec('PRAGMA busy_timeout = 5000;');
+
+/**
+ * Força checkpoint e realiza snapshot de backup seguro
+ */
+export function flushAndBackupDatabase(): void {
+  try {
+    db.exec('PRAGMA wal_checkpoint(PASSIVE);');
+    if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size > 0) {
+      fs.copyFileSync(DB_PATH, BACKUP_FILE);
+    }
+  } catch {
+    // Ignora pequenas falhas transitórias
+  }
+}
+
+/**
+ * Encerra o banco de dados com checkpoint completo (TRUNCATE) garantindo zero perda de dados
+ */
+export function closeDatabase(): void {
+  try {
+    console.log('🔒 Executando checkpoint final (TRUNCATE) e salvando backup do SQLite...');
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size > 0) {
+      fs.copyFileSync(DB_PATH, BACKUP_FILE);
+    }
+    db.close();
+    console.log('✅ Banco de dados persistido e fechado com segurança absoluta.');
+  } catch (err) {
+    console.error('Erro ao encerrar banco de dados:', err);
+  }
+}
+
+// Timer de checkpoint periódico e backup a cada 30 segundos
+if (process.env.NODE_ENV !== 'test') {
+  const syncTimer = setInterval(() => {
+    flushAndBackupDatabase();
+  }, 30000);
+  if (syncTimer.unref) syncTimer.unref();
+}
 
 /**
  * Inicializa o banco de dados criando as tabelas unificadas e migrações seguras

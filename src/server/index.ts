@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'node:path';
 import fs from 'node:fs';
 import { apiRouter } from './routes/index.js';
-import { initDatabase } from './db/database.js';
+import { initDatabase, closeDatabase } from './db/database.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -59,8 +59,34 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 // Inicialização
 initDatabase();
 
-app.listen(Number(PORT), '0.0.0.0', () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`⚡ Servidor Robo Led Partner rodando em http://0.0.0.0:${PORT}`);
 });
 
+// Tratamento seguro de desligamento (Proxmox / Docker Graceful Shutdown)
+let isShuttingDown = false;
+const handleShutdown = (signal: string) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`\n🛑 Sinal ${signal} recebido. Encerrando servidor e persistindo banco de dados com segurança...`);
+
+  server.close(() => {
+    console.log('🔌 Conexões HTTP finalizadas.');
+    closeDatabase();
+    process.exit(0);
+  });
+
+  // Timeout forçado de segurança caso alguma conexão permaneça aberta
+  setTimeout(() => {
+    console.warn('⚠️ Tempo limite de encerramento atingido. Forçando persistência e saída.');
+    closeDatabase();
+    process.exit(0);
+  }, 10000).unref();
+};
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+process.on('SIGHUP', () => handleShutdown('SIGHUP'));
+
 export default app;
+

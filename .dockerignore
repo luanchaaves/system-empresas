@@ -5,3 +5,7 @@ dist
 .env
 data/contracts/*
 !data/contracts/.gitkeep
+data/*.sqlite*
+data/backups/*
+*.log
+

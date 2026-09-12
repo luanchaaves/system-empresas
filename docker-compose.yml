@@ -4,12 +4,16 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sistema-contrato-roboled
-    restart: unless-stopped
+    restart: always
+    stop_grace_period: 30s
     ports:
       - "3001:3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - DATA_DIR=/app/data
+      - DATABASE_PATH=/app/data/database.sqlite
     volumes:
-      # Persiste o banco de dados SQLite e os PDFs gerados no host
+      # Persiste o banco de dados SQLite, backups e PDFs gerados no host
       - ./data:/app/data
+

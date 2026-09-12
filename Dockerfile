@@ -39,10 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Configuração de ambiente do Puppeteer
+# Configuração de ambiente do Puppeteer e Caminhos Persistentes
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    PORT=3001
+    PORT=3001 \
+    NODE_ENV=production \
+    DATA_DIR=/app/data \
+    DATABASE_PATH=/app/data/database.sqlite
 
 WORKDIR /app
 
@@ -58,12 +61,16 @@ COPY . .
 # Compila o frontend React (Vite) e o backend TypeScript (tsc)
 RUN npm run build
 
-# Define NODE_ENV para produção em runtime
-ENV NODE_ENV=production
-
 # Cria pasta de dados persistentes para SQLite e PDFs
-RUN mkdir -p /app/data /app/data/contracts
+RUN mkdir -p /app/data /app/data/contracts /app/data/backups
+
+# Declaração explícita de volume persistente
+VOLUME ["/app/data"]
 
 EXPOSE 3001
 
+# Encerramento seguro via SIGTERM para checkpoint do SQLite
+STOPSIGNAL SIGTERM
+
 CMD ["npm", "start"]
+
