@@ -265,12 +265,18 @@ export const EventosPage: React.FC<EventosPageProps> = ({
     setEditingEventId(null);
     setSelectedClientId('');
     setClientMode('EXISTING');
+    
+    // Auto-seleciona a primeira atração por padrão se houver
+    const defaultAtt = attractions.length > 0 ? attractions[0] : null;
+    const initialAttIds = defaultAtt ? [defaultAtt.id] : [];
+    const initialVal = defaultAtt?.valor_base || 700;
+
     setFormData({
       cliente_nome: '',
       cliente_cpf: '',
       cliente_telefone: '',
       cliente_email: '',
-      nome_evento: '',
+      nome_evento: defaultAtt ? `${defaultAtt.nome}` : '',
       tipo_evento: 'ANIVERSARIO',
       data: new Date().toISOString().split('T')[0],
       horario: '20:00',
@@ -279,9 +285,9 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       cidade: 'São Bernardo do Campo',
       estado: 'SP',
       status: 'AGENDADO',
-      valor_total: 700,
+      valor_total: initialVal,
       observacoes: '',
-      atracao_ids: [],
+      atracao_ids: initialAttIds,
     });
     setShowModal(true);
   };
@@ -306,7 +312,9 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       status: event.status,
       valor_total: event.valor_total,
       observacoes: event.observacoes || '',
-      atracao_ids: event.atracoes ? event.atracoes.map((a) => a.id) : [],
+      atracao_ids: event.atracoes && event.atracoes.length > 0 
+        ? event.atracoes.map((a) => a.id) 
+        : (attractions.length > 0 ? [attractions[0].id] : []),
     });
     setShowModal(true);
   };
@@ -315,17 +323,25 @@ export const EventosPage: React.FC<EventosPageProps> = ({
     setSelectedClientId(clientId);
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      setFormData((prev) => ({
-        ...prev,
-        cliente_nome: client.nome,
-        cliente_cpf: client.cpf,
-        cliente_telefone: client.telefone || '',
-        cliente_email: client.email || '',
-        endereco: prev.endereco || client.endereco || '',
-        cidade: prev.cidade || client.cidade || 'São Bernardo do Campo',
-        estado: prev.estado || client.estado || 'SP',
-        nome_evento: prev.nome_evento || `Apresentação ${client.nome}`,
-      }));
+      setFormData((prev) => {
+        const selectedAtts = attractions.filter(a => prev.atracao_ids.includes(a.id)).map(a => a.nome).join(' + ');
+        const prefix = selectedAtts || 'Robô LED';
+        const autoTitle = `${prefix} - ${client.nome}`;
+
+        return {
+          ...prev,
+          cliente_nome: client.nome,
+          cliente_cpf: client.cpf,
+          cliente_telefone: client.telefone || '',
+          cliente_email: client.email || '',
+          endereco: prev.endereco || client.endereco || '',
+          cidade: prev.cidade || client.cidade || 'São Bernardo do Campo',
+          estado: prev.estado || client.estado || 'SP',
+          nome_evento: prev.nome_evento && !prev.nome_evento.startsWith('Evento ') && !prev.nome_evento.startsWith('Apresentação')
+            ? prev.nome_evento
+            : autoTitle,
+        };
+      });
     }
   };
 
@@ -334,15 +350,21 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       const exists = prev.atracao_ids.includes(id);
       const newIds = exists ? prev.atracao_ids.filter((item) => item !== id) : [...prev.atracao_ids, id];
 
-      const totalBase = newIds.reduce((sum, attId) => {
-        const att = attractions.find((a) => a.id === attId);
-        return sum + (att?.valor_base || 0);
-      }, 0);
+      const selectedAtts = attractions.filter(a => newIds.includes(a.id));
+      const totalBase = selectedAtts.reduce((sum, att) => sum + (att?.valor_base || 0), 0);
+      const attNames = selectedAtts.map(a => a.nome).join(' + ') || 'Robô LED';
+      const cName = prev.cliente_nome || (clientMode === 'EXISTING' && selectedClientId ? clients.find(c => c.id === selectedClientId)?.nome : '');
+
+      let autoTitle = prev.nome_evento;
+      if (!autoTitle || autoTitle.startsWith('Evento ') || autoTitle.includes(' - ') || autoTitle.startsWith('Apresentação')) {
+        autoTitle = cName ? `${attNames} - ${cName}` : `${attNames}`;
+      }
 
       return {
         ...prev,
         atracao_ids: newIds,
         valor_total: totalBase > 0 ? totalBase : prev.valor_total,
+        nome_evento: autoTitle,
       };
     });
   };
@@ -350,15 +372,34 @@ export const EventosPage: React.FC<EventosPageProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const cName = clientMode === 'EXISTING' && selectedClientId
+        ? clients.find(c => c.id === Number(selectedClientId))?.nome || formData.cliente_nome
+        : formData.cliente_nome;
+
+      const selectedAtts = attractions.filter(a => formData.atracao_ids.includes(a.id)).map(a => a.nome).join(' + ');
+      const finalTitle = formData.nome_evento?.trim() || (cName ? `${selectedAtts || 'Robô LED'} - ${cName}` : `Apresentação ${formData.data}`);
+
+      const payload: CreateEventDTO = {
+        ...formData,
+        cliente_id: clientMode === 'EXISTING' && selectedClientId ? Number(selectedClientId) : undefined,
+        cliente_nome: cName || 'Cliente Particular',
+        nome_evento: finalTitle,
+        valor_total: Number(formData.valor_total) || 0,
+        atracao_ids: formData.atracao_ids.length > 0 ? formData.atracao_ids : (attractions.length > 0 ? [attractions[0].id] : []),
+      };
+
       if (editingEventId) {
-        await api.updateEvent(editingEventId, formData as any);
-        success('Evento Atualizado!', 'As informações e sincronização com o Google Agenda foram atualizadas.');
+        await api.updateEvent(editingEventId, payload as any);
+        success('Evento Atualizado!', 'As informações e sincronização foram salvas com sucesso.');
       } else {
-        await api.createEvent(formData as CreateEventDTO);
+        await api.createEvent(payload);
         success(
           'Evento Agendado com Sucesso!',
-          'Evento salvo no sistema e sincronizado com a agenda roboledpartner@gmail.com.'
+          'Evento salvo no sistema e disponível na sua agenda em tempo real.'
         );
+        // Reseta filtros para garantir visibilidade imediata
+        setSelectedStatus('TODOS');
+        setTypeCategory('TODOS');
       }
       setShowModal(false);
       loadData();
@@ -980,13 +1021,19 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                     </div>
                   </div>
 
-                  {event.atracoes && event.atracoes.length > 0 && (
+                  {event.atracoes && event.atracoes.length > 0 ? (
                     <div className="mt-3 flex flex-wrap gap-1">
                       {event.atracoes.map((att) => (
                         <span key={att.id} className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">
                           {att.nome}
                         </span>
                       ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-medium">
+                        Robô LED Neon
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1123,8 +1170,22 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                       <input
                         type="text"
                         required
+                        placeholder="Ex: Matheus Chiccae ou Juliana Paes"
                         value={formData.cliente_nome}
-                        onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData((prev) => {
+                            const selectedAtts = attractions.filter(a => prev.atracao_ids.includes(a.id)).map(a => a.nome).join(' + ') || 'Robô LED';
+                            const autoTitle = val ? `${selectedAtts} - ${val}` : '';
+                            return {
+                              ...prev,
+                              cliente_nome: val,
+                              nome_evento: prev.nome_evento && !prev.nome_evento.startsWith('Evento ') && !prev.nome_evento.startsWith('Apresentação') && !prev.nome_evento.includes(' - ')
+                                ? prev.nome_evento
+                                : autoTitle,
+                            };
+                          });
+                        }}
                         className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-dark-900 border border-slate-700 text-white"
                       />
                     </div>
@@ -1292,9 +1353,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                     className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-emerald-400 font-bold focus:outline-none focus:border-brand-500"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Gera automaticamente Sinal de 40% (R 
-                    {((formData.valor_total || 0) * 0.4).toFixed(2)}) e Saldo de 60% (R 
-                    {((formData.valor_total || 0) * 0.6).toFixed(2)}).
+                    Gera automaticamente Sinal de 40% (R$ {((formData.valor_total || 0) * 0.4).toFixed(2)}) e Saldo de 60% (R$ {((formData.valor_total || 0) * 0.6).toFixed(2)}).
                   </p>
                 </div>
 
