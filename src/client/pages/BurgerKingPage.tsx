@@ -312,14 +312,14 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
         await api.createFinancialEntry({
           evento_id: event.id,
           cliente_id: event.cliente_id,
-          tipo_parcela: 'SALDO_FINAL',
+          tipo_parcela: 'RESTANTE',
           valor: val,
           data_vencimento: event.data,
           data_pagamento: new Date().toISOString().split('T')[0],
           status: 'PAGO',
           forma_pagamento: settleMethod,
           descricao: `Recebimento BK - ${event.loja_unidade || event.endereco || 'Loja'}`,
-        });
+        } as any);
       }
       success(`Pagamento baixado com sucesso para ${event.loja_unidade || event.endereco || 'evento'}!`);
       setSettlingEntryId(null);

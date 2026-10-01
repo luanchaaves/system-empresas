@@ -45,8 +45,10 @@ export const FinancialService = {
       tipo_parcela: data.tipo_parcela,
       valor: Number(data.valor),
       data_vencimento: data.data_vencimento,
-      status: 'PENDENTE',
+      data_pagamento: (data as any).data_pagamento || null,
+      status: (data as any).status || 'PENDENTE',
       forma_pagamento: data.forma_pagamento,
+      comprovante_ref: (data as any).comprovante_ref || null,
     });
   },
 
