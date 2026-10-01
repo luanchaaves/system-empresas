@@ -6,12 +6,16 @@ import { EventStatus, AttractionType } from '../../types/index.js';
 export const EventController = {
   list(req: Request, res: Response): void {
     try {
-      const { search, status, startDate, endDate } = req.query;
+      const { search, status, startDate, endDate, canalB2B, tipoEvento, isB2B, isSocial } = req.query;
       const events = EventService.list({
         search: search as string,
         status: status as EventStatus,
         startDate: startDate as string,
         endDate: endDate as string,
+        canalB2B: canalB2B as string,
+        tipoEvento: tipoEvento as any,
+        isB2B: isB2B === 'true' || isB2B === '1',
+        isSocial: isSocial === 'true' || isSocial === '1',
       });
       res.json(events);
     } catch (err: any) {

@@ -7,7 +7,7 @@ import { CompanyRepository } from '../db/database.js';
 export function requireApiKey(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   const config = CompanyRepository.get();
-  const configuredKey = config.api_key || 'demo_showcase_key_2026';
+  const configuredKey = config.api_key || 'rlp_live_secret_key_2026';
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({

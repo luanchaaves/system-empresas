@@ -24,16 +24,16 @@ export const ConfiguracoesPage: React.FC = () => {
   const [config, setConfig] = useState<CompanyConfig>({
     id: 1,
     company_name: 'Robo Led Partner',
-    responsavel: 'Carlos Henrique Silva',
-    documento: '12.345.678/0001-90',
-    endereco: 'Av. Paulista, 1500 - Bela Vista',
-    cidade: 'São Paulo',
+    responsavel: 'Luan Chaves Bispo',
+    documento: '66.560.196/0001-87',
+    endereco: 'Rua Senador Mario mota n230 - Sao Bernardo do campo',
+    cidade: 'São Bernardo do Campo',
     estado: 'SP',
     telefone: '',
     email: '',
-    api_key: 'demo_showcase_key_2026',
+    api_key: 'rlp_live_secret_key_2026',
     google_calendar_enabled: 1,
-    google_calendar_id: 'eventos.agenda.demo@gmail.com',
+    google_calendar_id: 'roboledpartner@gmail.com',
     google_calendar_credentials: '',
   });
 
@@ -229,7 +229,7 @@ export const ConfiguracoesPage: React.FC = () => {
               type="email"
               value={config.email || ''}
               onChange={(e) => setConfig({ ...config, email: e.target.value })}
-              placeholder="eventos.agenda.demo@gmail.com"
+              placeholder="roboledpartner@gmail.com"
               className="w-full px-3.5 py-2.5 rounded-xl bg-dark-800 border border-slate-700 text-slate-100 focus:outline-none focus:border-brand-500"
             />
           </div>
@@ -255,14 +255,14 @@ export const ConfiguracoesPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Google Agenda (eventos.agenda.demo@gmail.com) */}
+      {/* Google Agenda (roboledpartner@gmail.com) */}
       <div className="card-glass rounded-2xl p-6 space-y-5 border-purple-500/20">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
             <Calendar className="w-4 h-4 text-purple-400" /> Integração com Google Agenda (Google Calendar)
           </h3>
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
-            eventos.agenda.demo@gmail.com
+            roboledpartner@gmail.com
           </span>
         </div>
 
@@ -276,7 +276,7 @@ export const ConfiguracoesPage: React.FC = () => {
             <div>
               <div className="font-bold text-white">Sincronização Automática com Google Agenda</div>
               <div className="text-[11px] text-slate-400 mt-0.5">
-                Cria e atualiza eventos na agenda de <span className="text-purple-300 font-mono">eventos.agenda.demo@gmail.com</span> ao agendar ou editar.
+                Cria e atualiza eventos na agenda de <span className="text-purple-300 font-mono">roboledpartner@gmail.com</span> ao agendar ou editar.
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -296,9 +296,9 @@ export const ConfiguracoesPage: React.FC = () => {
               <label className="block font-bold text-slate-300 mb-1">ID da Agenda do Google (E-mail)</label>
               <input
                 type="text"
-                value={config.google_calendar_id || 'eventos.agenda.demo@gmail.com'}
+                value={config.google_calendar_id || 'roboledpartner@gmail.com'}
                 onChange={(e) => setConfig({ ...config, google_calendar_id: e.target.value })}
-                placeholder="eventos.agenda.demo@gmail.com"
+                placeholder="roboledpartner@gmail.com"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-dark-800 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -376,7 +376,7 @@ export const ConfiguracoesPage: React.FC = () => {
           <label className="block text-xs font-bold text-slate-300 mb-1.5">Chave Secreta de API (Bearer Token)</label>
           <div className="flex items-center gap-2">
             <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-dark-800 border border-slate-700 text-emerald-400 font-mono text-xs font-bold select-all truncate">
-              {config.api_key || 'demo_showcase_key_2026'}
+              {config.api_key || 'rlp_live_secret_key_2026'}
             </div>
             <button
               type="button"

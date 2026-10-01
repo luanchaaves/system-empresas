@@ -15,6 +15,10 @@ export const EventService = {
     status?: EventStatus;
     startDate?: string;
     endDate?: string;
+    canalB2B?: string;
+    tipoEvento?: any;
+    isB2B?: boolean;
+    isSocial?: boolean;
   }): (EventDetails & { google_calendar_link: string })[] {
     const events = EventRepository.list(filters);
     return events.map((event) => {
@@ -48,12 +52,12 @@ export const EventService = {
     // 1. Garante ou cria o cliente
     let clienteId = data.cliente_id;
     if (!clienteId) {
-      if (!data.cliente_nome || !data.cliente_cpf) {
-        throw new Error('Nome e CPF do cliente são obrigatórios para agendar um evento.');
+      if (!data.cliente_nome) {
+        throw new Error('Nome do cliente ou loja é obrigatório para agendar um evento.');
       }
       const client = ClientRepository.createOrUpdate({
         nome: data.cliente_nome.trim(),
-        cpf: data.cliente_cpf.trim(),
+        cpf: data.cliente_cpf ? data.cliente_cpf.trim() : '00.000.000/0001-00',
         endereco: data.cliente_endereco?.trim() || data.endereco.trim(),
         telefone: data.cliente_telefone?.trim(),
         email: data.cliente_email?.trim(),
@@ -64,22 +68,30 @@ export const EventService = {
     const duracao = Number(data.duracao) || 2;
     const horarioTermino = calculateEndTime(data.horario, duracao);
 
+    const isB2B = data.tipo_evento === 'CORPORATIVO_BK' || (data.canal_b2b && data.canal_b2b !== 'PARTICULAR');
+    const prazo = data.prazo_pagamento_dias || (isB2B ? 30 : 0);
+
     // 2. Cria o Evento
     const event = EventRepository.create({
       cliente_id: clienteId,
       nome_evento: data.nome_evento?.trim() || `Evento ${data.data}`,
-      tipo_evento: data.tipo_evento || 'OUTRO',
+      tipo_evento: data.tipo_evento || (isB2B ? 'CORPORATIVO_BK' : 'OUTRO'),
       data: data.data,
       horario: data.horario,
       horario_termino: horarioTermino,
       duracao,
       endereco: data.endereco.trim(),
-      cidade: data.cidade?.trim() || 'São Paulo',
+      cidade: data.cidade?.trim() || 'São Bernardo do Campo',
       estado: data.estado?.trim() || 'SP',
       cep: data.cep?.trim(),
       status: data.status || 'AGENDADO',
       valor_total: Number(data.valor_total) || 0,
       observacoes: data.observacoes?.trim(),
+      canal_b2b: data.canal_b2b || (isB2B ? 'DIRETO_BK' : 'PARTICULAR'),
+      loja_unidade: data.loja_unidade?.trim(),
+      prazo_pagamento_dias: prazo,
+      data_previsao_pagamento: data.data_previsao_pagamento?.trim(),
+      nota_fiscal_ref: data.nota_fiscal_ref?.trim(),
     });
 
     // 3. Associa atrações se fornecidas
@@ -97,17 +109,29 @@ export const EventService = {
 
     // 4. Cria parcelas financeiras automáticas se tiver valor > 0
     if (event.valor_total > 0) {
-      FinancialService.generateStandardInstallments({
-        eventoId: event.id,
-        clienteId,
-        totalValue: event.valor_total,
-        eventDate: event.data,
-      });
+      if (isB2B) {
+        FinancialService.generateB2BInstallment({
+          eventoId: event.id,
+          clienteId,
+          totalValue: event.valor_total,
+          eventDate: event.data,
+          prazoDias: prazo,
+          lojaUnidade: event.loja_unidade || event.nome_evento,
+          canalB2B: event.canal_b2b,
+        });
+      } else {
+        FinancialService.generateStandardInstallments({
+          eventoId: event.id,
+          clienteId,
+          totalValue: event.valor_total,
+          eventDate: event.data,
+        });
+      }
     }
 
     const fullEvent = this.getById(event.id);
 
-    // 5. Sincroniza automaticamente com o Google Calendar (eventos.agenda.demo@gmail.com)
+    // 5. Sincroniza automaticamente com o Google Calendar (roboledpartner@gmail.com)
     let syncResult: GoogleSyncResult | undefined;
     const config = CompanyRepository.get();
     if (config.google_calendar_enabled) {
@@ -144,6 +168,11 @@ export const EventService = {
       estado: data.estado !== undefined ? data.estado.trim() : current.estado,
       observacoes: data.observacoes !== undefined ? data.observacoes.trim() : current.observacoes,
       valor_total: data.valor_total !== undefined ? Number(data.valor_total) : current.valor_total,
+      canal_b2b: data.canal_b2b !== undefined ? data.canal_b2b : current.canal_b2b,
+      loja_unidade: data.loja_unidade !== undefined ? data.loja_unidade.trim() : current.loja_unidade,
+      prazo_pagamento_dias: data.prazo_pagamento_dias !== undefined ? Number(data.prazo_pagamento_dias) : current.prazo_pagamento_dias,
+      data_previsao_pagamento: data.data_previsao_pagamento !== undefined ? data.data_previsao_pagamento.trim() : current.data_previsao_pagamento,
+      nota_fiscal_ref: data.nota_fiscal_ref !== undefined ? data.nota_fiscal_ref.trim() : current.nota_fiscal_ref,
     });
 
     // Atualiza atrações se fornecidas

@@ -12,11 +12,13 @@ import {
   Bot,
   ChevronRight,
   X,
+  Store,
 } from 'lucide-react';
 
 export type NavTab =
   | 'dashboard'
   | 'eventos'
+  | 'burger-king'
   | 'novo-contrato'
   | 'contratos'
   | 'financeiro'
@@ -49,10 +51,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'eventos' as NavTab,
-      label: 'Eventos & Agenda',
+      label: 'Eventos & Festas',
       icon: CalendarDays,
-      description: 'Calendário & status',
+      description: 'Casamentos, 15 anos & agenda',
       highlight: true,
+    },
+    {
+      id: 'burger-king' as NavTab,
+      label: 'Burger King & B2B',
+      icon: Store,
+      description: 'Fila 90d & Faturamento BK',
+      badge: 'BK',
     },
     {
       id: 'novo-contrato' as NavTab,
@@ -182,7 +191,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </div>
                 </div>
-                {isActive && <ChevronRight className="w-4 h-4 text-white/90 shrink-0 ml-1" />}
+                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                  {item.badge && !isActive && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      {item.badge}
+                    </span>
+                  )}
+                  {isActive && <ChevronRight className="w-4 h-4 text-white/90" />}
+                </div>
               </button>
             );
           })}

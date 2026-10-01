@@ -21,6 +21,8 @@ import {
   X,
   Share2,
   Check,
+  Table,
+  LayoutGrid,
 } from 'lucide-react';
 import { api } from '../api/index.js';
 import { EventDetails, EventStatus, Attraction, CreateEventDTO, Client } from '../../types/index.js';
@@ -45,6 +47,8 @@ export const EventosPage: React.FC<EventosPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('TODOS');
+  const [typeCategory, setTypeCategory] = useState<'TODOS' | 'SOCIAIS' | 'CORPORATIVOS'>('SOCIAIS');
+  const [viewMode, setViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
   const [showModal, setShowModal] = useState(false);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [generatingContractId, setGeneratingContractId] = useState<number | null>(null);
@@ -99,6 +103,8 @@ export const EventosPage: React.FC<EventosPageProps> = ({
         api.getEvents({
           status: selectedStatus !== 'TODOS' ? (selectedStatus as EventStatus) : undefined,
           search: searchQuery || undefined,
+          isSocial: typeCategory === 'SOCIAIS' ? true : undefined,
+          isB2B: typeCategory === 'CORPORATIVOS' ? true : undefined,
         }),
         api.getAttractions({ ativo: true }),
         api.getClients(),
@@ -116,7 +122,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [selectedStatus, searchQuery]);
+  }, [selectedStatus, searchQuery, typeCategory]);
 
   useEffect(() => {
     if (initialClient) {
@@ -266,7 +272,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
         await api.createEvent(formData as CreateEventDTO);
         success(
           'Evento Agendado com Sucesso!',
-          'Evento salvo no sistema e sincronizado com a agenda Google Agenda.'
+          'Evento salvo no sistema e sincronizado com a agenda roboledpartner@gmail.com.'
         );
       }
       setShowModal(false);
@@ -294,7 +300,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       if (res.web_link) {
         window.open(res.web_link, '_blank');
       }
-      success('Google Agenda', res.message || 'Evento sincronizado com sucesso na agenda Google Agenda!');
+      success('Google Agenda', res.message || 'Evento sincronizado com sucesso na agenda roboledpartner@gmail.com!');
     } catch (err: any) {
       // Fallback para link direto
       const webUrl = (event as any).google_calendar_link;
@@ -404,27 +410,92 @@ export const EventosPage: React.FC<EventosPageProps> = ({
         </button>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
-          {['TODOS', 'AGENDADO', 'CONFIRMADO', 'EM_ANDAMENTO', 'REALIZADO', 'CANCELADO'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                selectedStatus === st
-                  ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                  : 'bg-dark-800 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-              }`}
-            >
-              {st === 'TODOS' ? 'Todos os Eventos' : st}
-            </button>
-          ))}
+      {/* Category Pills & View Switcher */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-850/80 border border-slate-800 p-3 rounded-2xl">
+        {/* Category Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+          <button
+            onClick={() => setTypeCategory('SOCIAIS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              typeCategory === 'SOCIAIS'
+                ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-md shadow-brand-600/30'
+                : 'bg-dark-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Festas Sociais (15 Anos, Casamentos...)
+          </button>
+          <button
+            onClick={() => setTypeCategory('TODOS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              typeCategory === 'TODOS'
+                ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-md shadow-brand-600/30'
+                : 'bg-dark-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            Todos os Eventos
+          </button>
+          <button
+            onClick={() => setTypeCategory('CORPORATIVOS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              typeCategory === 'CORPORATIVOS'
+                ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-md shadow-brand-600/30'
+                : 'bg-dark-900 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            Corporativos & B2B
+          </button>
         </div>
 
-        <div className="text-xs text-slate-400 font-medium">
-          Total: <strong className="text-white">{events.length}</strong> evento(s)
+        {/* View Switcher (Table vs Cards) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center bg-dark-900 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setViewMode('TABLE')}
+              title="Visualização em Planilha (Tabela Compacta)"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'TABLE'
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span>Planilha</span>
+            </button>
+            <button
+              onClick={() => setViewMode('CARDS')}
+              title="Visualização em Cards"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'CARDS'
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Cards</span>
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-400 font-medium pl-2">
+            Total: <strong className="text-white">{events.length}</strong>
+          </div>
         </div>
+      </div>
+
+      {/* Status Filter Sub-Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {['TODOS', 'AGENDADO', 'CONFIRMADO', 'EM_ANDAMENTO', 'REALIZADO', 'CANCELADO'].map((st) => (
+          <button
+            key={st}
+            onClick={() => setSelectedStatus(st)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+              selectedStatus === st
+                ? 'bg-slate-700 text-white border border-slate-600'
+                : 'bg-dark-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            {st === 'TODOS' ? 'Todos os Status' : st}
+          </button>
+        ))}
       </div>
 
       {/* Events List */}
@@ -443,7 +514,115 @@ export const EventosPage: React.FC<EventosPageProps> = ({
               : 'Clique no botão acima para agendar um novo show ou apresentação de robô LED.'}
           </p>
         </div>
+      ) : viewMode === 'TABLE' ? (
+        /* ==================== SPREADSHEET / TABLE VIEW ==================== */
+        <div className="bg-dark-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300 border-collapse">
+              <thead className="bg-dark-900 text-[11px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
+                <tr>
+                  <th className="py-3 px-4">Data / Hora</th>
+                  <th className="py-3 px-4">Evento / Tipo</th>
+                  <th className="py-3 px-4">Cliente & Contato</th>
+                  <th className="py-3 px-4">Local / Buffet</th>
+                  <th className="py-3 px-4">Atração</th>
+                  <th className="py-3 px-4 text-right">Valor Total</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                  <th className="py-3 px-4 text-center">Contrato</th>
+                  <th className="py-3 px-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-medium">
+                {events.map((event) => {
+                  const hasContract = Boolean(event.contrato_id || event.contrato?.id);
+                  const contractNum = event.contrato?.numero || `ID #${event.contrato_id}`;
+
+                  return (
+                    <tr key={event.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-2.5 px-4 font-mono">
+                        <div className="font-bold text-white">{event.data.split('-').reverse().join('/')}</div>
+                        <div className="text-slate-500 text-[11px]">{event.horario} ({event.duracao}h)</div>
+                      </td>
+                      <td className="py-2.5 px-4 font-bold text-white">
+                        <div className="truncate max-w-[180px]">{event.nome_evento || `Festa de ${event.cliente?.nome}`}</div>
+                        <span className="text-[10px] text-pink-400 bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-500/20 inline-block mt-0.5">
+                          {event.tipo_evento || 'FESTA'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <div className="font-semibold text-slate-200 truncate max-w-[150px]">{event.cliente?.nome || '-'}</div>
+                        <div className="text-[11px] text-slate-400">{event.cliente?.telefone || event.cliente?.email || '-'}</div>
+                      </td>
+                      <td className="py-2.5 px-4 text-slate-300">
+                        <div className="truncate max-w-[200px]" title={event.endereco}>{event.endereco}</div>
+                        <div className="text-[11px] text-slate-500">{event.cidade} - {event.estado}</div>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {event.atracoes?.map((a) => a.atracao?.nome).join(', ') || 'Robô LED'}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-extrabold text-emerald-400">
+                        R$ {event.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-2.5 px-4 text-center">
+                        {getStatusBadge(event.status)}
+                      </td>
+                      <td className="py-2.5 px-4 text-center">
+                        {hasContract ? (
+                          <a
+                            href={api.getContractPdfUrl(event.contrato?.id || event.contrato_id!)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
+                          >
+                            <FileText className="w-3 h-3" />
+                            {contractNum}
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateContract(event)}
+                            disabled={generatingContractId === event.id}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-600/30 text-brand-300 text-[11px] font-semibold border border-brand-500/30 hover:bg-brand-600 hover:text-white transition-all"
+                          >
+                            <Sparkles className="w-3 h-3 text-amber-300" />
+                            {generatingContractId === event.id ? '...' : 'Gerar'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleSyncGoogle(event)}
+                            disabled={syncingGoogleId === event.id}
+                            className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-600/30 rounded-lg transition-colors"
+                            title="Sincronizar Google Agenda"
+                          >
+                            <Calendar className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditModal(event)}
+                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Editar Evento"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(event.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                            title="Excluir Evento"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* ==================== CARDS VIEW ==================== */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {events.map((event) => {
             const hasContract = Boolean(event.contrato_id || event.contrato?.id);
@@ -532,7 +711,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                       onClick={() => handleSyncGoogle(event)}
                       disabled={syncingGoogleId === event.id}
                       className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/15 rounded-lg transition-colors flex items-center gap-1"
-                      title="Abrir / Sincronizar com Google Agenda (Google Agenda)"
+                      title="Abrir / Sincronizar com Google Agenda (roboledpartner@gmail.com)"
                     >
                       <Calendar className="w-4 h-4 text-purple-400" />
                       <span className="text-[10px] font-bold hidden sm:inline">Google</span>
@@ -614,7 +793,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
               <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-2.5 text-xs text-purple-300">
                 <Calendar className="w-4 h-4 text-purple-400 shrink-0" />
                 <span>
-                  <strong>Google Agenda Ativo:</strong> Este evento será sincronizado na conta <code>Google Agenda</code>.
+                  <strong>Google Agenda Ativo:</strong> Este evento será sincronizado na conta <code>roboledpartner@gmail.com</code>.
                 </span>
               </div>
 

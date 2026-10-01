@@ -193,4 +193,57 @@ export const FinancialService = {
 
     return [entradaEntry, restanteEntry];
   },
+
+  /**
+   * Gera parcela de faturamento B2B / Burger King com vencimento a prazo (30, 60 ou 90 dias)
+   */
+  generateB2BInstallment(params: {
+    eventoId: number;
+    clienteId: number;
+    totalValue: number;
+    eventDate: string;
+    prazoDias?: number;
+    lojaUnidade?: string;
+    canalB2B?: string;
+  }): FinancialEntry[] {
+    const existing = FinancialRepository.list({ eventoId: params.eventoId });
+    if (existing.length > 0) {
+      return existing;
+    }
+
+    const prazo = params.prazoDias && params.prazoDias > 0 ? params.prazoDias : 30;
+    
+    // Calcula a data de vencimento a partir da data do evento + prazo em dias
+    let dataVencimento = params.eventDate;
+    try {
+      const d = new Date(params.eventDate + 'T12:00:00Z');
+      d.setDate(d.getDate() + prazo);
+      dataVencimento = d.toISOString().split('T')[0];
+    } catch {
+      dataVencimento = params.eventDate;
+    }
+
+    const canalLabel = params.canalB2B === 'REI_DOS_ADESIVOS'
+      ? ' (via Rei dos Adesivos)'
+      : params.canalB2B === 'OG_GRAFICA'
+      ? ' (via OG Gráfica)'
+      : params.canalB2B === 'DIRETO_BK'
+      ? ' (Direto BK)'
+      : '';
+
+    const localInfo = params.lojaUnidade ? ` - ${params.lojaUnidade}` : '';
+    const desc = `Faturamento BK${localInfo}${canalLabel} [Prazo ${prazo}d]`;
+
+    const entry = FinancialRepository.create({
+      evento_id: params.eventoId,
+      cliente_id: params.clienteId,
+      descricao: desc,
+      tipo_parcela: 'AVULSO',
+      valor: params.totalValue,
+      data_vencimento: dataVencimento,
+      status: 'PENDENTE',
+    });
+
+    return [entry];
+  },
 };

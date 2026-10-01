@@ -57,15 +57,15 @@ export function buildTemplateData(
 
   const usoImagemAutorizado = contract.uso_imagem !== 0;
   const dataEmissaoDate = contract.created_at ? new Date(contract.created_at) : new Date();
-  const dataEmissaoExtenso = formatDateExtenso(dataEmissaoDate, empresa.cidade || 'São Paulo');
+  const dataEmissaoExtenso = formatDateExtenso(dataEmissaoDate, empresa.cidade || 'São Bernardo do Campo');
 
   return {
     empresa: {
       nome: empresa.company_name || 'Robo Led Partner',
-      responsavel: empresa.responsavel || 'Carlos Henrique Silva',
-      documento: empresa.documento || '12.345.678/0001-90',
-      endereco: empresa.endereco || 'Av. Paulista, 1500 - Bela Vista',
-      cidade: empresa.cidade || 'São Paulo',
+      responsavel: empresa.responsavel || 'Luan Chaves Bispo',
+      documento: empresa.documento || '66.560.196/0001-87',
+      endereco: empresa.endereco || 'Rua Senador Mario mota n230 - Sao Bernardo do campo',
+      cidade: empresa.cidade || 'São Bernardo do Campo',
       estado: empresa.estado || 'SP',
       telefone: empresa.telefone || '',
       email: empresa.email || '',
@@ -108,7 +108,7 @@ export function buildTemplateData(
       numero: contract.numero || 'RLP-PREVIEW',
       data_emissao: dataEmissaoDate.toISOString(),
       data_emissao_extenso: dataEmissaoExtenso.replace(`${empresa.cidade}, `, '').replace(`${empresa.cidade} - SP, `, ''),
-      cidade_emissao: empresa.cidade || 'São Paulo',
+      cidade_emissao: empresa.cidade || 'São Bernardo do Campo',
       uso_imagem_autorizado: usoImagemAutorizado,
     },
   };

@@ -154,12 +154,20 @@ export const api = {
     status?: EventStatus;
     startDate?: string;
     endDate?: string;
+    canalB2B?: string;
+    tipoEvento?: string;
+    isB2B?: boolean;
+    isSocial?: boolean;
   }): Promise<EventDetails[]> {
     const query = new URLSearchParams();
     if (params?.search) query.set('search', params.search);
     if (params?.status) query.set('status', params.status);
     if (params?.startDate) query.set('startDate', params.startDate);
     if (params?.endDate) query.set('endDate', params.endDate);
+    if (params?.canalB2B) query.set('canalB2B', params.canalB2B);
+    if (params?.tipoEvento) query.set('tipoEvento', params.tipoEvento);
+    if (params?.isB2B) query.set('isB2B', 'true');
+    if (params?.isSocial) query.set('isSocial', 'true');
 
     const url = `${API_BASE}/eventos${query.toString() ? `?${query.toString()}` : ''}`;
     return fetchSafe<EventDetails[]>(url);

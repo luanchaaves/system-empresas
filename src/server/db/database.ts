@@ -24,6 +24,7 @@ import {
   GeneralExpense,
   ExpenseCategory,
   CostsSummaryDTO,
+  B2BChannel,
 } from '../../types/index.js';
 
 const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
@@ -102,26 +103,26 @@ export function initDatabase(): void {
     CREATE TABLE IF NOT EXISTS configuracoes (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       company_name TEXT NOT NULL DEFAULT 'Robo Led Partner',
-      responsavel TEXT NOT NULL DEFAULT 'Carlos Henrique Silva',
-      documento TEXT NOT NULL DEFAULT '12.345.678/0001-90',
-      endereco TEXT NOT NULL DEFAULT 'Av. Paulista, 1500 - Bela Vista',
+      responsavel TEXT NOT NULL DEFAULT 'Luan Chaves Bispo',
+      documento TEXT NOT NULL DEFAULT '66.560.196/0001-87',
+      endereco TEXT NOT NULL DEFAULT 'Rua Senador Mario mota n230 - Sao Bernardo do campo',
       telefone TEXT DEFAULT '',
       email TEXT DEFAULT '',
-      cidade TEXT NOT NULL DEFAULT 'São Paulo',
+      cidade TEXT NOT NULL DEFAULT 'São Bernardo do Campo',
       estado TEXT NOT NULL DEFAULT 'SP',
       cep TEXT DEFAULT '',
-      api_key TEXT DEFAULT 'demo_showcase_key_2026',
+      api_key TEXT DEFAULT 'rlp_live_secret_key_2026',
       google_calendar_enabled INTEGER DEFAULT 1,
-      google_calendar_id TEXT DEFAULT 'eventos.agenda.demo@gmail.com',
+      google_calendar_id TEXT DEFAULT 'roboledpartner@gmail.com',
       google_calendar_credentials TEXT DEFAULT '',
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
   // Migrações seguras de colunas em configuracoes
-  try { db.exec('ALTER TABLE configuracoes ADD COLUMN api_key TEXT DEFAULT "demo_showcase_key_2026";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN api_key TEXT DEFAULT "rlp_live_secret_key_2026";'); } catch {}
   try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_enabled INTEGER DEFAULT 1;'); } catch {}
-  try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_id TEXT DEFAULT "eventos.agenda.demo@gmail.com";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_id TEXT DEFAULT "roboledpartner@gmail.com";'); } catch {}
   try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_credentials TEXT DEFAULT "";'); } catch {}
 
 
@@ -169,7 +170,7 @@ export function initDatabase(): void {
       horario TEXT NOT NULL,
       horario_termino TEXT,
       endereco TEXT NOT NULL,
-      cidade TEXT DEFAULT 'São Paulo',
+      cidade TEXT DEFAULT 'São Bernardo do Campo',
       estado TEXT DEFAULT 'SP',
       cep TEXT,
       duracao REAL NOT NULL DEFAULT 2,
@@ -177,6 +178,11 @@ export function initDatabase(): void {
       valor_total REAL NOT NULL DEFAULT 0,
       observacoes TEXT,
       google_event_id TEXT,
+      canal_b2b TEXT DEFAULT 'PARTICULAR',
+      loja_unidade TEXT,
+      prazo_pagamento_dias INTEGER DEFAULT 30,
+      data_previsao_pagamento TEXT,
+      nota_fiscal_ref TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -188,11 +194,45 @@ export function initDatabase(): void {
   try { db.exec("ALTER TABLE eventos ADD COLUMN status TEXT NOT NULL DEFAULT 'AGENDADO';"); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN valor_total REAL NOT NULL DEFAULT 0;'); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN google_event_id TEXT;'); } catch {}
+  try { db.exec("ALTER TABLE eventos ADD COLUMN canal_b2b TEXT DEFAULT 'PARTICULAR';"); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN loja_unidade TEXT;'); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN prazo_pagamento_dias INTEGER DEFAULT 30;'); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN data_previsao_pagamento TEXT;'); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN nota_fiscal_ref TEXT;'); } catch {}
 
   // Índices em eventos
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_eventos_data ON eventos(data);'); } catch {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_eventos_status ON eventos(status);'); } catch {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_eventos_cliente ON eventos(cliente_id);'); } catch {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_eventos_canal ON eventos(canal_b2b);'); } catch {}
+
+  // Auto-tagging inteligente de eventos Burger King & parceiros (Rei dos Adesivos, OG Gráfica)
+  try {
+    db.exec(`
+      UPDATE eventos 
+      SET canal_b2b = 'REI_DOS_ADESIVOS', tipo_evento = 'CORPORATIVO_BK'
+      WHERE id IN (
+        SELECT e.id FROM eventos e
+        JOIN clientes c ON e.cliente_id = c.id
+        WHERE c.nome LIKE '%Rei dos adesivos%' OR e.nome_evento LIKE '%Rei dos adesivos%'
+      ) AND (canal_b2b = 'PARTICULAR' OR canal_b2b IS NULL);
+
+      UPDATE eventos 
+      SET canal_b2b = 'OG_GRAFICA', tipo_evento = 'CORPORATIVO_BK'
+      WHERE id IN (
+        SELECT e.id FROM eventos e
+        JOIN clientes c ON e.cliente_id = c.id
+        WHERE c.nome LIKE '%OG%' OR e.nome_evento LIKE '%OG%'
+      ) AND (canal_b2b = 'PARTICULAR' OR canal_b2b IS NULL);
+
+      UPDATE eventos 
+      SET canal_b2b = 'DIRETO_BK', tipo_evento = 'CORPORATIVO_BK'
+      WHERE (
+        endereco LIKE '%BK%' OR endereco LIKE '%Burger%' OR
+        nome_evento LIKE '%BK%' OR nome_evento LIKE '%Burger%'
+      ) AND (canal_b2b = 'PARTICULAR' OR canal_b2b IS NULL);
+    `);
+  } catch {}
 
 
   // 5. Associação Evento <-> Atrações
@@ -304,7 +344,7 @@ export function initDatabase(): void {
   if (!checkConfig) {
     db.prepare(`
       INSERT INTO configuracoes (id, company_name, responsavel, documento, endereco, cidade, estado, api_key)
-      VALUES (1, 'Robo Led Partner', 'Carlos Henrique Silva', '12.345.678/0001-90', 'Av. Paulista, 1500 - Bela Vista', 'São Paulo', 'SP', 'demo_showcase_key_2026')
+      VALUES (1, 'Robo Led Partner', 'Luan Chaves Bispo', '66.560.196/0001-87', 'Rua Senador Mario mota n230 - Sao Bernardo do campo', 'São Bernardo do Campo', 'SP', 'rlp_live_secret_key_2026')
     `).run();
   }
 
@@ -455,17 +495,17 @@ export const CompanyRepository = {
     return {
       id: 1,
       company_name: 'Robo Led Partner',
-      responsavel: 'Carlos Henrique Silva',
-      documento: '12.345.678/0001-90',
-      endereco: 'Av. Paulista, 1500 - Bela Vista',
+      responsavel: 'Luan Chaves Bispo',
+      documento: '66.560.196/0001-87',
+      endereco: 'Rua Senador Mario mota n230 - Sao Bernardo do campo',
       telefone: '',
       email: '',
-      cidade: 'São Paulo',
+      cidade: 'São Bernardo do Campo',
       estado: 'SP',
       cep: '',
-      api_key: 'demo_showcase_key_2026',
+      api_key: 'rlp_live_secret_key_2026',
       google_calendar_enabled: true,
-      google_calendar_id: 'eventos.agenda.demo@gmail.com',
+      google_calendar_id: 'roboledpartner@gmail.com',
       google_calendar_credentials: '',
     };
   },
@@ -486,9 +526,9 @@ export const CompanyRepository = {
       updated.cidade,
       updated.estado,
       updated.cep || '',
-      updated.api_key || current.api_key || 'demo_showcase_key_2026',
+      updated.api_key || current.api_key || 'rlp_live_secret_key_2026',
       updated.google_calendar_enabled ? 1 : 0,
-      updated.google_calendar_id || 'eventos.agenda.demo@gmail.com',
+      updated.google_calendar_id || 'roboledpartner@gmail.com',
       updated.google_calendar_credentials || '',
       updated.updated_at
     );
@@ -640,8 +680,14 @@ export const EventRepository = {
   create(data: Omit<EventDetails, 'id' | 'created_at' | 'updated_at'>): EventDetails {
     const now = new Date().toISOString();
     const result = db.prepare(`
-      INSERT INTO eventos (cliente_id, nome_evento, tipo_evento, data, horario, horario_termino, endereco, cidade, estado, cep, duracao, status, valor_total, observacoes, google_event_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO eventos (
+        cliente_id, nome_evento, tipo_evento, data, horario, horario_termino,
+        endereco, cidade, estado, cep, duracao, status, valor_total,
+        observacoes, google_event_id, canal_b2b, loja_unidade,
+        prazo_pagamento_dias, data_previsao_pagamento, nota_fiscal_ref,
+        created_at, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.cliente_id,
       data.nome_evento || '',
@@ -650,7 +696,7 @@ export const EventRepository = {
       data.horario,
       data.horario_termino || '',
       data.endereco,
-      data.cidade || 'São Paulo',
+      data.cidade || 'São Bernardo do Campo',
       data.estado || 'SP',
       data.cep || '',
       data.duracao || 2,
@@ -658,6 +704,11 @@ export const EventRepository = {
       data.valor_total || 0,
       data.observacoes || '',
       data.google_event_id || '',
+      data.canal_b2b || 'PARTICULAR',
+      data.loja_unidade || '',
+      data.prazo_pagamento_dias || 30,
+      data.data_previsao_pagamento || '',
+      data.nota_fiscal_ref || '',
       now,
       now
     );
@@ -672,7 +723,11 @@ export const EventRepository = {
     const updated = { ...current, ...data, updated_at: now };
     db.prepare(`
       UPDATE eventos
-      SET nome_evento = ?, tipo_evento = ?, data = ?, horario = ?, horario_termino = ?, endereco = ?, cidade = ?, estado = ?, cep = ?, duracao = ?, status = ?, valor_total = ?, observacoes = ?, google_event_id = ?, updated_at = ?
+      SET nome_evento = ?, tipo_evento = ?, data = ?, horario = ?, horario_termino = ?,
+          endereco = ?, cidade = ?, estado = ?, cep = ?, duracao = ?,
+          status = ?, valor_total = ?, observacoes = ?, google_event_id = ?,
+          canal_b2b = ?, loja_unidade = ?, prazo_pagamento_dias = ?,
+          data_previsao_pagamento = ?, nota_fiscal_ref = ?, updated_at = ?
       WHERE id = ?
     `).run(
       updated.nome_evento || '',
@@ -681,7 +736,7 @@ export const EventRepository = {
       updated.horario,
       updated.horario_termino || '',
       updated.endereco,
-      updated.cidade || 'São Paulo',
+      updated.cidade || 'São Bernardo do Campo',
       updated.estado || 'SP',
       updated.cep || '',
       updated.duracao,
@@ -689,6 +744,11 @@ export const EventRepository = {
       updated.valor_total,
       updated.observacoes || '',
       updated.google_event_id || '',
+      updated.canal_b2b || 'PARTICULAR',
+      updated.loja_unidade || '',
+      updated.prazo_pagamento_dias || 30,
+      updated.data_previsao_pagamento || '',
+      updated.nota_fiscal_ref || '',
       now,
       id
     );
@@ -705,6 +765,10 @@ export const EventRepository = {
     status?: EventStatus;
     startDate?: string;
     endDate?: string;
+    canalB2B?: string;
+    tipoEvento?: EventType;
+    isB2B?: boolean;
+    isSocial?: boolean;
   }): EventDetails[] {
     let query = `
       SELECT 
@@ -722,6 +786,20 @@ export const EventRepository = {
       query += ' AND e.status = ?';
       params.push(filters.status);
     }
+    if (filters?.canalB2B && filters.canalB2B !== 'TODOS') {
+      query += ' AND e.canal_b2b = ?';
+      params.push(filters.canalB2B);
+    }
+    if (filters?.tipoEvento) {
+      query += ' AND e.tipo_evento = ?';
+      params.push(filters.tipoEvento);
+    }
+    if (filters?.isB2B) {
+      query += " AND (e.canal_b2b IN ('DIRETO_BK', 'REI_DOS_ADESIVOS', 'OG_GRAFICA', 'OUTRO_B2B') OR e.tipo_evento = 'CORPORATIVO_BK' OR e.nome_evento LIKE '%BK%' OR e.nome_evento LIKE '%Burger%')";
+    }
+    if (filters?.isSocial) {
+      query += " AND (e.canal_b2b = 'PARTICULAR' OR e.canal_b2b IS NULL) AND (e.tipo_evento != 'CORPORATIVO_BK' OR e.tipo_evento IS NULL) AND e.nome_evento NOT LIKE '%BK%' AND e.nome_evento NOT LIKE '%Burger%'";
+    }
     if (filters?.startDate) {
       query += ' AND e.data >= ?';
       params.push(filters.startDate);
@@ -732,8 +810,8 @@ export const EventRepository = {
     }
     if (filters?.search && filters.search.trim()) {
       const term = `%${filters.search.trim()}%`;
-      query += ' AND (cl.nome LIKE ? OR e.nome_evento LIKE ? OR e.endereco LIKE ?)';
-      params.push(term, term, term);
+      query += ' AND (cl.nome LIKE ? OR e.nome_evento LIKE ? OR e.endereco LIKE ? OR e.loja_unidade LIKE ?)';
+      params.push(term, term, term, term);
     }
 
     query += ' ORDER BY e.data ASC, e.horario ASC';
@@ -785,7 +863,7 @@ export const EventRepository = {
       horario: String(row.horario),
       horario_termino: row.horario_termino ? String(row.horario_termino) : undefined,
       endereco: String(row.endereco),
-      cidade: row.cidade ? String(row.cidade) : 'São Paulo',
+      cidade: row.cidade ? String(row.cidade) : 'São Bernardo do Campo',
       estado: row.estado ? String(row.estado) : 'SP',
       cep: row.cep ? String(row.cep) : undefined,
       duracao: Number(row.duracao || 2),
@@ -793,6 +871,11 @@ export const EventRepository = {
       valor_total: Number(row.valor_total || 0),
       observacoes: row.observacoes ? String(row.observacoes) : undefined,
       google_event_id: row.google_event_id ? String(row.google_event_id) : undefined,
+      canal_b2b: (row.canal_b2b as B2BChannel) || 'PARTICULAR',
+      loja_unidade: row.loja_unidade ? String(row.loja_unidade) : undefined,
+      prazo_pagamento_dias: row.prazo_pagamento_dias !== undefined && row.prazo_pagamento_dias !== null ? Number(row.prazo_pagamento_dias) : 30,
+      data_previsao_pagamento: row.data_previsao_pagamento ? String(row.data_previsao_pagamento) : undefined,
+      nota_fiscal_ref: row.nota_fiscal_ref ? String(row.nota_fiscal_ref) : undefined,
       created_at: String(row.created_at),
       updated_at: String(row.updated_at),
     };
@@ -820,7 +903,6 @@ export const EventRepository = {
 
     return event;
   },
-
 };
 
 export const FinancialRepository = {
@@ -1347,7 +1429,7 @@ export function seedCustosAndExpenses(): void {
       const historicalExpenses = [
         { item: 'Compra do robô de léd, cilindro, pistola e escada.', fornecedor: 'Roberto', valor: 2400.0, data: '2025-08-22', pago: 1, tipo_gasto: 'INVESTIMENTO', observacoes: '' },
         { item: 'Cilindro, Eva, Acrílico e manequim.', fornecedor: 'Roberto', valor: 400.0, data: '2025-08-30', pago: 1, tipo_gasto: 'INVESTIMENTO', observacoes: '' },
-        { item: 'Personagens: Mickey, Minnei, Sonic, 3 patrulhas canina', fornecedor: 'Estudio Mascotes SP', valor: 10000.0, data: '2026-05-10', pago: 0, tipo_gasto: 'INVESTIMENTO', observacoes: 'Parcelamento fornecedor mascotes' },
+        { item: 'Personagens: Mickey, Minnei, Sonic, 3 patrulhas canina', fornecedor: 'Mauricio Mascotes', valor: 10000.0, data: '2026-05-10', pago: 0, tipo_gasto: 'INVESTIMENTO', observacoes: 'Saldo devedor para Luan (10k)' },
         { item: '2 La casa de papel completo - 3 pistolas - 1 maleta', fornecedor: 'Mercado Livre', valor: 1270.0, data: '2026-04-21', pago: 1, tipo_gasto: 'INVESTIMENTO', observacoes: '' },
         { item: 'Fantasia do Homem aranha', fornecedor: 'Mercado Livre', valor: 190.0, data: '2026-04-24', pago: 1, tipo_gasto: 'INVESTIMENTO', observacoes: '' },
         { item: 'Bateria nova, Robo.', fornecedor: 'Mercado Livre', valor: 241.0, data: '2025-10-20', pago: 1, tipo_gasto: 'MELHORIAS', observacoes: '' },

@@ -4,6 +4,7 @@ import { MainLayout } from './layouts/MainLayout.js';
 import { NavTab } from './components/Sidebar.js';
 import { DashboardPage } from './pages/DashboardPage.js';
 import { EventosPage } from './pages/EventosPage.js';
+import { BurgerKingPage } from './pages/BurgerKingPage.js';
 import { NovoContratoPage } from './pages/NovoContratoPage.js';
 import { ContratosPage } from './pages/ContratosPage.js';
 import { FinanceiroPage } from './pages/FinanceiroPage.js';
@@ -48,6 +49,13 @@ export const App: React.FC = () => {
             onNavigateToNewContractWithEvent={(_event) => {
               setCurrentTab('novo-contrato');
             }}
+          />
+        )}
+
+        {currentTab === 'burger-king' && (
+          <BurgerKingPage
+            searchQuery={searchQuery}
+            onNavigateToFinancial={() => setCurrentTab('financeiro')}
           />
         )}
 

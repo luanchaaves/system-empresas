@@ -32,7 +32,7 @@ import { EventCost, GeneralExpense, ExpenseCategory, CostsSummaryDTO } from '../
 import { formatCurrencyBRL } from '../../domain/calculations.js';
 
 export const CustosPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'EVENTOS' | 'COMPRAS' | 'DRE'>('EVENTOS');
+  const [activeTab, setActiveTab] = useState<'DASHBOARDS' | 'EVENTOS' | 'COMPRAS' | 'DRE'>('DASHBOARDS');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -390,10 +390,22 @@ export const CustosPage: React.FC = () => {
       {/* Navegação por Abas */}
       <div className="flex border-b border-slate-800 space-x-1 sm:space-x-3 overflow-x-auto no-scrollbar">
         <button
+          onClick={() => setActiveTab('DASHBOARDS')}
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
+            activeTab === 'DASHBOARDS'
+              ? 'border-brand-500 text-brand-400 font-bold'
+              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4 text-brand-400" />
+          📊 Dashboards & Gráficos
+        </button>
+
+        <button
           onClick={() => setActiveTab('EVENTOS')}
           className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
             activeTab === 'EVENTOS'
-              ? 'border-cyan-400 text-cyan-400'
+              ? 'border-cyan-400 text-cyan-400 font-bold'
               : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
           }`}
         >
@@ -405,7 +417,7 @@ export const CustosPage: React.FC = () => {
           onClick={() => setActiveTab('COMPRAS')}
           className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
             activeTab === 'COMPRAS'
-              ? 'border-purple-400 text-purple-400'
+              ? 'border-purple-400 text-purple-400 font-bold'
               : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
           }`}
         >
@@ -417,7 +429,7 @@ export const CustosPage: React.FC = () => {
           onClick={() => setActiveTab('DRE')}
           className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
             activeTab === 'DRE'
-              ? 'border-emerald-400 text-emerald-400'
+              ? 'border-emerald-400 text-emerald-400 font-bold'
               : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
           }`}
         >
@@ -425,6 +437,179 @@ export const CustosPage: React.FC = () => {
           DRE & Lucro Líquido Real
         </button>
       </div>
+
+      {/* ==================== ABA 0: DASHBOARDS & GRÁFICOS ==================== */}
+      {activeTab === 'DASHBOARDS' && costsSummary && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Card Principal: Distribuição do Faturamento Bruto */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
+            <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              Distribuição do Faturamento Total ({formatCurrencyBRL(costsSummary.faturamentoTotalEventos)})
+            </h3>
+            <p className="text-xs text-slate-400 mb-6">
+              Visualização proporcional de onde foram aplicadas as receitas geradas pelos eventos.
+            </p>
+
+            {/* Barra Proporcional de Distribuição */}
+            <div className="w-full h-7 rounded-xl bg-slate-950 overflow-hidden flex border border-slate-800 shadow-inner">
+              <div
+                style={{
+                  width: `${Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      (costsSummary.totalCustosEventos / (costsSummary.faturamentoTotalEventos || 1)) * 100
+                    )
+                  )}%`,
+                }}
+                className="bg-amber-500 hover:bg-amber-400 transition-all flex items-center justify-center text-[10px] font-black text-black"
+                title={`Custos Diretos: ${formatCurrencyBRL(costsSummary.totalCustosEventos)}`}
+              >
+                {((costsSummary.totalCustosEventos / (costsSummary.faturamentoTotalEventos || 1)) * 100).toFixed(0)}%
+              </div>
+              <div
+                style={{
+                  width: `${Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      (costsSummary.totalDespesasGerais / (costsSummary.faturamentoTotalEventos || 1)) * 100
+                    )
+                  )}%`,
+                }}
+                className="bg-purple-500 hover:bg-purple-400 transition-all flex items-center justify-center text-[10px] font-black text-white"
+                title={`Compras & Investimentos: ${formatCurrencyBRL(costsSummary.totalDespesasGerais)}`}
+              >
+                {((costsSummary.totalDespesasGerais / (costsSummary.faturamentoTotalEventos || 1)) * 100).toFixed(0)}%
+              </div>
+              <div
+                style={{
+                  width: `${Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      (costsSummary.lucroLiquidoReal / (costsSummary.faturamentoTotalEventos || 1)) * 100
+                    )
+                  )}%`,
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 transition-all flex items-center justify-center text-[10px] font-black text-black"
+                title={`Lucro Líquido: ${formatCurrencyBRL(costsSummary.lucroLiquidoReal)}`}
+              >
+                {((costsSummary.lucroLiquidoReal / (costsSummary.faturamentoTotalEventos || 1)) * 100).toFixed(0)}%
+              </div>
+            </div>
+
+            {/* Legenda com Indicadores */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-800/80">
+              <div className="flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-md bg-amber-500 shrink-0" />
+                <div>
+                  <div className="text-xs text-slate-400">Custos Diretos (Eventos)</div>
+                  <div className="text-sm font-bold text-amber-400">{formatCurrencyBRL(costsSummary.totalCustosEventos)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-md bg-purple-500 shrink-0" />
+                <div>
+                  <div className="text-xs text-slate-400">Compras & Investimentos</div>
+                  <div className="text-sm font-bold text-purple-400">{formatCurrencyBRL(costsSummary.totalDespesasGerais)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-3.5 h-3.5 rounded-md bg-emerald-500 shrink-0" />
+                <div>
+                  <div className="text-xs text-slate-400">Lucro Líquido Real</div>
+                  <div className="text-sm font-bold text-emerald-400">{formatCurrencyBRL(costsSummary.lucroLiquidoReal)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid de 2 Colunas: Custos Diretos vs Compras & Investimentos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Breakdown de Custos por Tipo de Insumo */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <Fuel className="w-5 h-5 text-amber-400" />
+                Custos Diretos por Insumo & Equipe
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Total de {formatCurrencyBRL(costsSummary.totalCustosEventos)} gastos nas apresentações
+              </p>
+
+              <div className="space-y-3.5">
+                {[
+                  { label: 'Cilindros de CO2', val: costsSummary.breakdownCustosEventos.cilindro, color: 'bg-cyan-500' },
+                  { label: 'Gerbs (Fogo Frio)', val: costsSummary.breakdownCustosEventos.gerb, color: 'bg-amber-500' },
+                  { label: 'Gasolina / Combustível', val: costsSummary.breakdownCustosEventos.gasolina, color: 'bg-red-500' },
+                  { label: 'Pedágio & Vallet', val: costsSummary.breakdownCustosEventos.pedagio + costsSummary.breakdownCustosEventos.vallet, color: 'bg-orange-500' },
+                  { label: 'Ajudantes & Monitores', val: costsSummary.breakdownCustosEventos.ajudante + costsSummary.breakdownCustosEventos.monitor, color: 'bg-purple-500' },
+                ].map((item) => {
+                  const perc = costsSummary.totalCustosEventos > 0 ? (item.val / costsSummary.totalCustosEventos) * 100 : 0;
+                  return (
+                    <div key={item.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 font-medium">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-[11px]">{perc.toFixed(1)}%</span>
+                          <span className="font-bold text-white">{formatCurrencyBRL(item.val)}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden">
+                        <div
+                          style={{ width: `${perc}%` }}
+                          className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Breakdown de Despesas Gerais & Investimentos */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-purple-400" />
+                Compras, Investimentos & Marketing
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Total de {formatCurrencyBRL(costsSummary.totalDespesasGerais)} investidos na estrutura do negócio
+              </p>
+
+              <div className="space-y-3.5">
+                {[
+                  { label: 'Melhorias & Peças de Robô', val: costsSummary.breakdownDespesasGerais.MELHORIAS, color: 'bg-blue-500' },
+                  { label: 'Investimento em Estrutura / Mascotes', val: costsSummary.breakdownDespesasGerais.INVESTIMENTO, color: 'bg-purple-500' },
+                  { label: 'Manutenção Preventiva', val: costsSummary.breakdownDespesasGerais.MANUTENCAO, color: 'bg-amber-500' },
+                  { label: 'Marketing, Tráfego & Divulgação', val: costsSummary.breakdownDespesasGerais.MARKETING, color: 'bg-pink-500' },
+                  { label: 'Imprevistos & Outros', val: costsSummary.breakdownDespesasGerais.IMPREVISTO, color: 'bg-rose-500' },
+                ].map((item) => {
+                  const perc = costsSummary.totalDespesasGerais > 0 ? (item.val / costsSummary.totalDespesasGerais) * 100 : 0;
+                  return (
+                    <div key={item.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 font-medium">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400 text-[11px]">{perc.toFixed(1)}%</span>
+                          <span className="font-bold text-white">{formatCurrencyBRL(item.val)}</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden">
+                        <div
+                          style={{ width: `${perc}%` }}
+                          className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ==================== ABA 1: CUSTOS POR EVENTO ==================== */}
       {activeTab === 'EVENTOS' && (

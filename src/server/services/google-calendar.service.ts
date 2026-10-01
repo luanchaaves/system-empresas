@@ -30,7 +30,7 @@ export const GoogleCalendarService = {
 
     const dates = `${dateClean}T${startTimeClean}/${dateClean}T${endTimeClean}`;
 
-    const locationText = `${event.endereco}, ${event.cidade || 'São Paulo'} - ${event.estado || 'SP'}`;
+    const locationText = `${event.endereco}, ${event.cidade || 'São Bernardo do Campo'} - ${event.estado || 'SP'}`;
     const location = encodeURIComponent(locationText);
 
     const atracoesText = event.atracoes && event.atracoes.length > 0
@@ -57,7 +57,7 @@ export const GoogleCalendarService = {
 
     const details = encodeURIComponent(detailsText);
 
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}&add=eventos.agenda.demo@gmail.com`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}&add=roboledpartner@gmail.com`;
   },
 
   /**
@@ -65,7 +65,7 @@ export const GoogleCalendarService = {
    */
   async getAuthClient(): Promise<{ calendar: any; calendarId: string } | null> {
     const config = CompanyRepository.get();
-    const calendarId = config.google_calendar_id || 'eventos.agenda.demo@gmail.com';
+    const calendarId = config.google_calendar_id || 'roboledpartner@gmail.com';
 
     // 1. Tenta carregar arquivo data/google-credentials.json
     const credentialsPath = path.resolve(process.cwd(), 'data', 'google-credentials.json');
@@ -112,7 +112,7 @@ export const GoogleCalendarService = {
   },
 
   /**
-   * Cria o evento diretamente no Google Calendar (eventos.agenda.demo@gmail.com)
+   * Cria o evento diretamente no Google Calendar (roboledpartner@gmail.com)
    */
   async createEvent(event: EventDetails): Promise<GoogleSyncResult> {
     const webLink = this.generateDirectWebUrl(event);
@@ -159,7 +159,7 @@ export const GoogleCalendarService = {
         requestBody: {
           summary: `⚡ Robô LED Partner - ${event.nome_evento || 'Apresentação'} (${event.cliente?.nome || 'Cliente'})`,
           description,
-          location: `${event.endereco}, ${event.cidade || 'São Paulo'} - ${event.estado || 'SP'}`,
+          location: `${event.endereco}, ${event.cidade || 'São Bernardo do Campo'} - ${event.estado || 'SP'}`,
           colorId: '3', // Roxo / Grape (Cor oficial da Robo Led Partner)
           start: {
             dateTime: new Date(startDateTime).toISOString(),
@@ -177,7 +177,7 @@ export const GoogleCalendarService = {
         success: true,
         google_event_id: response.data.id || undefined,
         web_link: response.data.htmlLink || webLink,
-        message: 'Evento sincronizado com sucesso no Google Agenda (eventos.agenda.demo@gmail.com)!',
+        message: 'Evento sincronizado com sucesso no Google Agenda (roboledpartner@gmail.com)!',
       };
     } catch (err: any) {
       console.error('Erro ao inserir evento na API do Google Calendar:', err);
@@ -234,7 +234,7 @@ export const GoogleCalendarService = {
         requestBody: {
           summary: `⚡ Robô LED Partner - ${event.nome_evento || 'Apresentação'} (${event.cliente?.nome || 'Cliente'})`,
           description,
-          location: `${event.endereco}, ${event.cidade || 'São Paulo'} - ${event.estado || 'SP'}`,
+          location: `${event.endereco}, ${event.cidade || 'São Bernardo do Campo'} - ${event.estado || 'SP'}`,
           colorId: '3',
           start: {
             dateTime: new Date(startDateTime).toISOString(),
@@ -288,7 +288,7 @@ export const GoogleCalendarService = {
    */
   async testConnection(): Promise<{ success: boolean; message: string; calendar_title?: string }> {
     const config = CompanyRepository.get();
-    const calendarId = config.google_calendar_id || 'eventos.agenda.demo@gmail.com';
+    const calendarId = config.google_calendar_id || 'roboledpartner@gmail.com';
     const authData = await this.getAuthClient();
 
     if (!authData) {

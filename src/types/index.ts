@@ -4,7 +4,9 @@ export type AttractionCategory = 'ROBO_LED' | 'PERSONAGEM_VIVO' | 'OUTRO';
 
 export type EventStatus = 'AGENDADO' | 'CONFIRMADO' | 'EM_ANDAMENTO' | 'REALIZADO' | 'CANCELADO';
 
-export type EventType = 'CASAMENTO' | 'ANIVERSARIO' | 'DEBUTANTE' | 'CORPORATIVO' | 'INFANTIL' | 'OUTRO';
+export type EventType = 'CASAMENTO' | 'ANIVERSARIO' | 'DEBUTANTE' | 'CORPORATIVO' | 'CORPORATIVO_BK' | 'INFANTIL' | 'OUTRO';
+
+export type B2BChannel = 'DIRETO_BK' | 'REI_DOS_ADESIVOS' | 'OG_GRAFICA' | 'OUTRO_B2B' | 'PARTICULAR';
 
 export type ContractStatus = 'RASCUNHO' | 'GERADO' | 'FINALIZADO' | 'CANCELADO';
 
@@ -84,6 +86,14 @@ export interface EventDetails {
   observacoes?: string;
   contrato_id?: number | null;
   google_event_id?: string;
+  
+  // Campos B2B / Burger King
+  canal_b2b?: B2BChannel;
+  loja_unidade?: string;
+  prazo_pagamento_dias?: number;
+  data_previsao_pagamento?: string;
+  nota_fiscal_ref?: string;
+
   created_at?: string;
   updated_at?: string;
 
@@ -198,11 +208,23 @@ export interface CreateEventDTO {
   atracao_ids?: number[];
   personagem_nome?: string;
   tipo_atracao?: AttractionType;
+
+  // B2B & Burger King
+  canal_b2b?: B2BChannel;
+  loja_unidade?: string;
+  prazo_pagamento_dias?: number;
+  data_previsao_pagamento?: string;
+  nota_fiscal_ref?: string;
 }
 
 export interface UpdateEventDTO extends Partial<CreateEventDTO> {
   status?: EventStatus;
   horario_termino?: string;
+  canal_b2b?: B2BChannel;
+  loja_unidade?: string;
+  prazo_pagamento_dias?: number;
+  data_previsao_pagamento?: string;
+  nota_fiscal_ref?: string;
 }
 
 export interface CreateAttractionDTO {
