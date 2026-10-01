@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CalendarDays,
   Plus,
@@ -23,11 +23,19 @@ import {
   Check,
   Table,
   LayoutGrid,
+  BarChart3,
+  TrendingUp,
+  PieChart,
+  Award,
+  Music,
+  PartyPopper,
+  Compass,
 } from 'lucide-react';
 import { api } from '../api/index.js';
 import { EventDetails, EventStatus, Attraction, CreateEventDTO, Client } from '../../types/index.js';
 import { useToast } from '../context/ToastContext.js';
 import { maskCPFInput, cleanCPF, isValidCPF, formatCPF } from '../../domain/cpf.js';
+import { formatCurrencyBRL } from '../../domain/calculations.js';
 
 interface EventosPageProps {
   onNavigateToNewContractWithEvent?: (event: EventDetails) => void;
@@ -48,7 +56,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>('TODOS');
   const [typeCategory, setTypeCategory] = useState<'TODOS' | 'SOCIAIS' | 'CORPORATIVOS'>('SOCIAIS');
-  const [viewMode, setViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
+  const [viewMode, setViewMode] = useState<'DASHBOARDS' | 'TABLE' | 'CARDS'>('DASHBOARDS');
   const [showModal, setShowModal] = useState(false);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [generatingContractId, setGeneratingContractId] = useState<number | null>(null);
@@ -151,11 +159,112 @@ export const EventosPage: React.FC<EventosPageProps> = ({
     }
   }, [initialClient]);
 
+  // ==================== DASHBOARD ANALYTICS COMPUTATIONS ====================
+  const eventAnalytics = useMemo(() => {
+    let totalValor = 0;
+    let totalHoras = 0;
+    let realizados = 0;
+    let agendados = 0;
+    let confirmados = 0;
+    let cancelados = 0;
+    let emAndamento = 0;
+
+    const partyMap: { [key: string]: { label: string; count: number; total: number; color: string; icon: string } } = {
+      CASAMENTO: { label: 'Casamentos & Bodas', count: 0, total: 0, color: 'bg-rose-500', icon: '💍' },
+      DEBUTANTE: { label: '15 Anos & Debutantes', count: 0, total: 0, color: 'bg-pink-500', icon: '👑' },
+      INFANTIL: { label: 'Aniversários Infantis', count: 0, total: 0, color: 'bg-cyan-500', icon: '🎈' },
+      ANIVERSARIO: { label: 'Aniversários & Adultos', count: 0, total: 0, color: 'bg-purple-500', icon: '🎉' },
+      CORPORATIVO: { label: 'Corporativos & B2B', count: 0, total: 0, color: 'bg-amber-500', icon: '🏢' },
+      OUTRO: { label: 'Outras Apresentações', count: 0, total: 0, color: 'bg-slate-500', icon: '✨' },
+    };
+
+    const weekdayMap = [
+      { name: 'Domingo', count: 0, total: 0, isWeekend: true },
+      { name: 'Segunda-feira', count: 0, total: 0, isWeekend: false },
+      { name: 'Terça-feira', count: 0, total: 0, isWeekend: false },
+      { name: 'Quarta-feira', count: 0, total: 0, isWeekend: false },
+      { name: 'Quinta-feira', count: 0, total: 0, isWeekend: false },
+      { name: 'Sexta-feira', count: 0, total: 0, isWeekend: true },
+      { name: 'Sábado', count: 0, total: 0, isWeekend: true },
+    ];
+
+    const cidadesMap: { [key: string]: { cidade: string; count: number; total: number } } = {};
+
+    for (const ev of events) {
+      const v = Number(ev.valor_total) || 0;
+      const h = Number(ev.duracao) || 2;
+      totalValor += v;
+      totalHoras += h;
+
+      if (ev.status === 'REALIZADO') realizados++;
+      else if (ev.status === 'CONFIRMADO') confirmados++;
+      else if (ev.status === 'AGENDADO') agendados++;
+      else if (ev.status === 'EM_ANDAMENTO') emAndamento++;
+      else if (ev.status === 'CANCELADO') cancelados++;
+
+      // Mix de Festas
+      const rawTipo = (ev.tipo_evento || 'OUTRO').toUpperCase();
+      let tipoKey = 'OUTRO';
+      if (rawTipo.includes('CASAMENTO')) tipoKey = 'CASAMENTO';
+      else if (rawTipo.includes('DEBUTANTE') || rawTipo.includes('15')) tipoKey = 'DEBUTANTE';
+      else if (rawTipo.includes('INFANTIL')) tipoKey = 'INFANTIL';
+      else if (rawTipo.includes('ANIVERSARIO')) tipoKey = 'ANIVERSARIO';
+      else if (rawTipo.includes('CORPORATIVO') || rawTipo.includes('B2B') || rawTipo.includes('BK') || rawTipo.includes('OG') || rawTipo.includes('REI')) tipoKey = 'CORPORATIVO';
+
+      partyMap[tipoKey].count++;
+      partyMap[tipoKey].total += v;
+
+      // Dia da Semana
+      if (ev.data) {
+        const parts = ev.data.split('-');
+        if (parts.length === 3) {
+          const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          const dayIndex = d.getDay();
+          if (weekdayMap[dayIndex]) {
+            weekdayMap[dayIndex].count++;
+            weekdayMap[dayIndex].total += v;
+          }
+        }
+      }
+
+      // Cidades
+      const cid = ev.cidade?.trim() || 'São Bernardo do Campo';
+      if (!cidadesMap[cid]) {
+        cidadesMap[cid] = { cidade: cid, count: 0, total: 0 };
+      }
+      cidadesMap[cid].count++;
+      cidadesMap[cid].total += v;
+    }
+
+    const totalCount = events.length;
+    const ticketMedio = totalCount > 0 ? totalValor / totalCount : 0;
+
+    const topCidades = Object.values(cidadesMap)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    const partyTypes = Object.values(partyMap).filter((item) => item.count > 0);
+
+    return {
+      totalCount,
+      totalHoras,
+      totalValor,
+      ticketMedio,
+      realizados,
+      confirmados,
+      agendados,
+      cancelados,
+      emAndamento,
+      partyTypes,
+      weekdayMap,
+      topCidades,
+    };
+  }, [events]);
+
   const handleOpenCreateModal = () => {
     setEditingEventId(null);
     setSelectedClientId('');
-    setClientMode(clients.length > 0 ? 'EXISTING' : 'NEW');
-    setClientFilterQuery('');
+    setClientMode('EXISTING');
     setFormData({
       cliente_nome: '',
       cliente_cpf: '',
@@ -181,65 +290,42 @@ export const EventosPage: React.FC<EventosPageProps> = ({
     setEditingEventId(event.id);
     setSelectedClientId(event.cliente_id || '');
     setClientMode('EXISTING');
-    setClientFilterQuery('');
     setFormData({
       cliente_nome: event.cliente?.nome || '',
       cliente_cpf: event.cliente?.cpf || '',
       cliente_telefone: event.cliente?.telefone || '',
       cliente_email: event.cliente?.email || '',
-      nome_evento: event.nome_evento || '',
+      nome_evento: event.nome_evento,
       tipo_evento: event.tipo_evento || 'ANIVERSARIO',
       data: event.data,
       horario: event.horario,
       duracao: event.duracao,
       endereco: event.endereco,
-      cidade: event.cidade || 'São Bernardo do Campo',
-      estado: event.estado || 'SP',
+      cidade: event.cidade,
+      estado: event.estado,
       status: event.status,
       valor_total: event.valor_total,
       observacoes: event.observacoes || '',
-      atracao_ids: event.atracoes?.map((a) => a.atracao_id) || [],
+      atracao_ids: event.atracoes ? event.atracoes.map((a) => a.id) : [],
     });
     setShowModal(true);
   };
 
-  const handleSelectExistingClient = (cId: number | '') => {
-    setSelectedClientId(cId);
-    if (!cId) return;
-
-    const selected = clients.find((c) => c.id === Number(cId));
-    if (selected) {
+  const handleSelectClient = (clientId: number) => {
+    setSelectedClientId(clientId);
+    const client = clients.find((c) => c.id === clientId);
+    if (client) {
       setFormData((prev) => ({
         ...prev,
-        cliente_nome: selected.nome,
-        cliente_cpf: selected.cpf,
-        cliente_telefone: selected.telefone || prev.cliente_telefone,
-        cliente_email: selected.email || prev.cliente_email,
-        endereco: prev.endereco || selected.endereco || '',
+        cliente_nome: client.nome,
+        cliente_cpf: client.cpf,
+        cliente_telefone: client.telefone || '',
+        cliente_email: client.email || '',
+        endereco: prev.endereco || client.endereco || '',
+        cidade: prev.cidade || client.cidade || 'São Bernardo do Campo',
+        estado: prev.estado || client.estado || 'SP',
+        nome_evento: prev.nome_evento || `Apresentação ${client.nome}`,
       }));
-      success('Cliente Selecionado', `Dados de ${selected.nome} preenchidos automaticamente.`);
-    }
-  };
-
-  const handleCpfChange = (val: string) => {
-    const masked = maskCPFInput(val);
-    setFormData((prev) => ({ ...prev, cliente_cpf: masked }));
-
-    // Tenta encontrar cliente existente pelo CPF digitado
-    const cleaned = cleanCPF(masked);
-    if (cleaned.length === 11 || cleaned.length === 14) {
-      const match = clients.find((c) => cleanCPF(c.cpf) === cleaned);
-      if (match) {
-        setSelectedClientId(match.id);
-        setFormData((prev) => ({
-          ...prev,
-          cliente_nome: match.nome,
-          cliente_telefone: match.telefone || prev.cliente_telefone,
-          cliente_email: match.email || prev.cliente_email,
-          endereco: prev.endereco || match.endereco || '',
-        }));
-        info('Cliente Reconhecido', `Localizado cadastro existente de: ${match.nome}`);
-      }
     }
   };
 
@@ -248,7 +334,6 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       const exists = prev.atracao_ids.includes(id);
       const newIds = exists ? prev.atracao_ids.filter((item) => item !== id) : [...prev.atracao_ids, id];
 
-      // Auto-recalcula valor sugerido se estiver adicionando
       const totalBase = newIds.reduce((sum, attId) => {
         const att = attractions.find((a) => a.id === attId);
         return sum + (att?.valor_base || 0);
@@ -302,7 +387,6 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       }
       success('Google Agenda', res.message || 'Evento sincronizado com sucesso na agenda roboledpartner@gmail.com!');
     } catch (err: any) {
-      // Fallback para link direto
       const webUrl = (event as any).google_calendar_link;
       if (webUrl) {
         window.open(webUrl, '_blank');
@@ -381,29 +465,29 @@ export const EventosPage: React.FC<EventosPageProps> = ({
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Banner Notice */}
-      <div className="card-glass rounded-2xl p-4 sm:p-5 border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="card-glass rounded-2xl p-6 border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-dark-800 via-dark-800 to-purple-950/30 shadow-xl">
         <div className="flex items-start gap-3.5">
           <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">
             <Calendar className="w-5 h-5" />
           </div>
-          <div className="text-xs">
-            <h4 className="font-bold text-white text-sm flex items-center gap-2 flex-wrap">
-              <span>Agenda de Apresentações</span>
+          <div>
+            <h4 className="font-bold text-white text-base flex items-center gap-2 flex-wrap">
+              <span>Agenda & Gestão de Eventos</span>
               <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 text-[10px] font-mono">
-                Google Calendar
+                Google Calendar Sync
               </span>
             </h4>
-            <p className="text-slate-400 mt-1">
-              Gerencie a escala dos Robôs de LED e Personagens, sincronize a agenda e gere contratos em 1 clique.
+            <p className="text-xs text-slate-400 mt-1">
+              Dashboards analíticos de ocupação, escala de Robôs de LED, controle de pista e sincronização de datas.
             </p>
           </div>
         </div>
 
         <button
           onClick={handleOpenCreateModal}
-          className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-semibold text-xs tracking-wide shadow-md shadow-brand-600/30 transition-all hover:scale-105 active:scale-95"
+          className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-600/30 transition-all hover:scale-105 active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Agendar Apresentação
@@ -446,9 +530,21 @@ export const EventosPage: React.FC<EventosPageProps> = ({
           </button>
         </div>
 
-        {/* View Switcher (Table vs Cards) */}
+        {/* View Switcher (Dashboards vs Table vs Cards) */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center bg-dark-900 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setViewMode('DASHBOARDS')}
+              title="Dashboards e Inteligência de Eventos"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'DASHBOARDS'
+                  ? 'bg-gradient-to-r from-purple-600 to-brand-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Dashboards</span>
+            </button>
             <button
               onClick={() => setViewMode('TABLE')}
               title="Visualização em Planilha (Tabela Compacta)"
@@ -481,22 +577,237 @@ export const EventosPage: React.FC<EventosPageProps> = ({
         </div>
       </div>
 
-      {/* Status Filter Sub-Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {['TODOS', 'AGENDADO', 'CONFIRMADO', 'EM_ANDAMENTO', 'REALIZADO', 'CANCELADO'].map((st) => (
-          <button
-            key={st}
-            onClick={() => setSelectedStatus(st)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-              selectedStatus === st
-                ? 'bg-slate-700 text-white border border-slate-600'
-                : 'bg-dark-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            {st === 'TODOS' ? 'Todos os Status' : st}
-          </button>
-        ))}
+      {/* KPI Cards de Eventos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-purple-500/30 transition-all">
+          <div className="flex items-center justify-between text-slate-400 mb-2">
+            <span className="text-xs font-semibold">Total de Apresentações</span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+              <PartyPopper className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-white">
+            {eventAnalytics.totalCount}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+            <span>{eventAnalytics.realizados} realizadas</span>
+            <span className="text-emerald-400 font-bold">{eventAnalytics.confirmados} confirmadas</span>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-brand-500/30 transition-all">
+          <div className="flex items-center justify-between text-slate-400 mb-2">
+            <span className="text-xs font-semibold">Horas de Show em Pista</span>
+            <div className="p-2 rounded-xl bg-brand-500/10 text-brand-400">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-brand-400">
+            {eventAnalytics.totalHoras} hrs
+          </div>
+          <div className="text-[11px] text-brand-400/80 mt-1">
+            Tempo acumulado de animação
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-emerald-500/30 transition-all">
+          <div className="flex items-center justify-between text-slate-400 mb-2">
+            <span className="text-xs font-semibold">Faturamento Total</span>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <DollarSign className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-emerald-400">
+            {formatCurrencyBRL(eventAnalytics.totalValor)}
+          </div>
+          <div className="text-[11px] text-emerald-400/80 mt-1">
+            Ticket Médio: {formatCurrencyBRL(eventAnalytics.ticketMedio)}
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-cyan-500/30 transition-all">
+          <div className="flex items-center justify-between text-slate-400 mb-2">
+            <span className="text-xs font-semibold">Cidades & Regiões</span>
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+              <MapPin className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-cyan-400">
+            {eventAnalytics.topCidades.length}+ Cidades
+          </div>
+          <div className="text-[11px] text-cyan-400/80 mt-1">
+            Grande SP, ABC, Litoral e Interior
+          </div>
+        </div>
       </div>
+
+      {/* ==================== VISÃO 1: DASHBOARDS & ANALYTICS DE EVENTOS ==================== */}
+      {viewMode === 'DASHBOARDS' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Grid 1: Mix de Festas & Ocupação por Dia da Semana */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Mix de Festas e Comemorações */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <PartyPopper className="w-5 h-5 text-pink-400" />
+                Mix de Comemorações & Tipos de Festa
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Distribuição das apresentações por perfil de evento social e corporativo.
+              </p>
+
+              <div className="space-y-4">
+                {eventAnalytics.partyTypes.map((item, idx) => {
+                  const perc = eventAnalytics.totalValor > 0 ? (item.total / eventAnalytics.totalValor) * 100 : 0;
+                  return (
+                    <div key={idx} className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-white font-bold flex items-center gap-1.5">
+                          <span>{item.icon}</span> {item.label}
+                        </span>
+                        <span className="text-slate-300 font-mono">
+                          {item.count} shows • <strong>{formatCurrencyBRL(item.total)}</strong> ({perc.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden">
+                        <div
+                          className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                          style={{ width: `${perc}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ocupação da Agenda por Dia da Semana */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-400" />
+                Densidade de Apresentações por Dia da Semana
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Concentração de shows na pista (Picos nos Finais de Semana).
+              </p>
+
+              <div className="space-y-3">
+                {eventAnalytics.weekdayMap.map((d, idx) => {
+                  const maxCount = Math.max(...eventAnalytics.weekdayMap.map((w) => w.count), 1);
+                  const perc = (d.count / maxCount) * 100;
+
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className={`font-semibold ${d.isWeekend ? 'text-white' : 'text-slate-400'}`}>
+                          {d.name} {d.isWeekend ? '🔥' : ''}
+                        </span>
+                        <span className="font-mono text-slate-300">
+                          {d.count} eventos ({formatCurrencyBRL(d.total)})
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-950 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            d.isWeekend ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-slate-700'
+                          }`}
+                          style={{ width: `${perc}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Grid 2: Status Operacional & Top Cidades Atendidas */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Status Operacional */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                Status Operacional da Agenda
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Acompanhamento dos shows realizados, confirmados e pendentes.
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-blue-500/30 text-center">
+                  <div className="text-xl font-black text-blue-400">{eventAnalytics.realizados}</div>
+                  <div className="text-[11px] font-bold text-white mt-0.5">Realizados</div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-center">
+                  <div className="text-xl font-black text-emerald-400">{eventAnalytics.confirmados}</div>
+                  <div className="text-[11px] font-bold text-white mt-0.5">Confirmados</div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/30 text-center">
+                  <div className="text-xl font-black text-amber-400">{eventAnalytics.agendados}</div>
+                  <div className="text-[11px] font-bold text-white mt-0.5">Agendados</div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-rose-500/30 text-center">
+                  <div className="text-xl font-black text-rose-400">{eventAnalytics.cancelados}</div>
+                  <div className="text-[11px] font-bold text-white mt-0.5">Cancelados</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Cidades Atendidas */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md shadow-xl">
+              <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-cyan-400" />
+                Principais Cidades & Praças Atendidas
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Cidades com maior volume de apresentações e shows contratados.
+              </p>
+
+              <div className="space-y-3">
+                {eventAnalytics.topCidades.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                        #{idx + 1}
+                      </span>
+                      <div>
+                        <div className="text-xs font-bold text-white">{c.cidade}</div>
+                        <div className="text-[10px] text-slate-500">{c.count} apresentações</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-black text-white">{formatCurrencyBRL(c.total)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Filter Sub-Tabs for List & Table */}
+      {viewMode !== 'DASHBOARDS' && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {['TODOS', 'AGENDADO', 'CONFIRMADO', 'EM_ANDAMENTO', 'REALIZADO', 'CANCELADO'].map((st) => (
+            <button
+              key={st}
+              onClick={() => setSelectedStatus(st)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                selectedStatus === st
+                  ? 'bg-slate-700 text-white border border-slate-600'
+                  : 'bg-dark-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+              }`}
+            >
+              {st === 'TODOS' ? 'Todos os Status' : st}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Events List */}
       {loading ? (
@@ -516,7 +827,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
         </div>
       ) : viewMode === 'TABLE' ? (
         /* ==================== SPREADSHEET / TABLE VIEW ==================== */
-        <div className="bg-dark-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-dark-850 border border-slate-800 rounded-2xl overflow-hidden shadow-xl animate-fadeIn">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-300 border-collapse">
               <thead className="bg-dark-900 text-[11px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-800">
@@ -550,41 +861,48 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                         </span>
                       </td>
                       <td className="py-2.5 px-4">
-                        <div className="font-semibold text-slate-200 truncate max-w-[150px]">{event.cliente?.nome || '-'}</div>
-                        <div className="text-[11px] text-slate-400">{event.cliente?.telefone || event.cliente?.email || '-'}</div>
-                      </td>
-                      <td className="py-2.5 px-4 text-slate-300">
-                        <div className="truncate max-w-[200px]" title={event.endereco}>{event.endereco}</div>
-                        <div className="text-[11px] text-slate-500">{event.cidade} - {event.estado}</div>
+                        <div className="font-semibold text-slate-200">{event.cliente?.nome || '—'}</div>
+                        <div className="text-[10px] text-slate-500 font-mono">{event.cliente?.telefone || '—'}</div>
                       </td>
                       <td className="py-2.5 px-4">
-                        {event.atracoes?.map((a) => a.atracao?.nome).join(', ') || 'Robô LED'}
+                        <div className="truncate max-w-[160px] text-slate-300" title={event.endereco}>
+                          {event.endereco || '—'}
+                        </div>
+                        <div className="text-[10px] text-slate-500">{event.cidade} - {event.estado}</div>
                       </td>
-                      <td className="py-2.5 px-4 text-right font-extrabold text-emerald-400">
-                        R$ {event.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <td className="py-2.5 px-4">
+                        {event.atracoes && event.atracoes.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[140px]">
+                            {event.atracoes.map((a) => (
+                              <span key={a.id} className="text-[9px] px-1.5 py-0.5 rounded bg-brand-500/15 text-brand-300 border border-brand-500/20 font-bold truncate">
+                                {a.nome}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-500">Robô LED Padrão</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-black text-emerald-400 font-mono text-xs">
+                        {formatCurrencyBRL(event.valor_total)}
                       </td>
                       <td className="py-2.5 px-4 text-center">
                         {getStatusBadge(event.status)}
                       </td>
                       <td className="py-2.5 px-4 text-center">
                         {hasContract ? (
-                          <a
-                            href={api.getContractPdfUrl(event.contrato?.id || event.contrato_id!)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 text-[11px] font-semibold border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
-                          >
-                            <FileText className="w-3 h-3" />
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                             {contractNum}
-                          </a>
+                          </span>
                         ) : (
                           <button
                             onClick={() => handleGenerateContract(event)}
                             disabled={generatingContractId === event.id}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-brand-600/30 text-brand-300 text-[11px] font-semibold border border-brand-500/30 hover:bg-brand-600 hover:text-white transition-all"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-600/20 text-brand-300 hover:bg-brand-600 hover:text-white border border-brand-500/30 transition-all flex items-center gap-1 mx-auto"
+                            title="Gerar contrato a partir deste evento"
                           >
-                            <Sparkles className="w-3 h-3 text-amber-300" />
-                            {generatingContractId === event.id ? '...' : 'Gerar'}
+                            <FileText className="w-2.5 h-2.5" />
+                            {generatingContractId === event.id ? 'Gerando...' : 'Gerar'}
                           </button>
                         )}
                       </td>
@@ -593,22 +911,22 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                           <button
                             onClick={() => handleSyncGoogle(event)}
                             disabled={syncingGoogleId === event.id}
-                            className="p-1.5 text-purple-400 hover:text-white hover:bg-purple-600/30 rounded-lg transition-colors"
-                            title="Sincronizar Google Agenda"
+                            className="p-1 rounded bg-slate-800 text-purple-400 hover:bg-purple-900/50 hover:text-white transition-all"
+                            title="Sincronizar / Abrir no Google Agenda"
                           >
                             <Calendar className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEditModal(event)}
-                            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            className="p-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
                             title="Editar Evento"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(event.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                            title="Excluir Evento"
+                            className="p-1 rounded bg-slate-800 text-rose-400 hover:bg-rose-900/50 hover:text-white transition-all"
+                            title="Excluir"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -621,9 +939,9 @@ export const EventosPage: React.FC<EventosPageProps> = ({
             </table>
           </div>
         </div>
-      ) : (
-        /* ==================== CARDS VIEW ==================== */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      ) : viewMode === 'CARDS' ? (
+        /* ==================== CARD GRID VIEW ==================== */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">
           {events.map((event) => {
             const hasContract = Boolean(event.contrato_id || event.contrato?.id);
             const contractNum = event.contrato?.numero || `ID #${event.contrato_id}`;
@@ -631,331 +949,253 @@ export const EventosPage: React.FC<EventosPageProps> = ({
             return (
               <div
                 key={event.id}
-                className="bg-dark-850 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-xl hover:shadow-black/40 group"
+                className="card-glass rounded-2xl p-5 border-slate-800 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 group"
               >
                 <div>
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-white truncate group-hover:text-brand-400 transition-colors">
-                        {event.nome_evento || `Evento de ${event.cliente?.nome}`}
-                      </h4>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-                        <User className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="truncate">{event.cliente?.nome || 'Cliente não identificado'}</span>
-                      </div>
-                    </div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-dark-900 text-brand-400 border border-brand-500/20">
+                      {event.data.split('-').reverse().join('/')} às {event.horario}
+                    </span>
                     {getStatusBadge(event.status)}
                   </div>
 
-                  {/* Event Details Grid */}
-                  <div className="space-y-2 py-3 border-y border-slate-800/60 text-xs">
-                    <div className="flex items-center justify-between text-slate-300">
-                      <span className="flex items-center gap-1.5 text-slate-400">
-                        <Calendar className="w-3.5 h-3.5 text-purple-400" /> Data:
-                      </span>
-                      <span className="font-semibold text-white">
-                        {event.data.split('-').reverse().join('/')}
-                      </span>
+                  <h3 className="font-bold text-white text-sm line-clamp-1 group-hover:text-brand-300 transition-colors">
+                    {event.nome_evento || `Apresentação ${event.cliente?.nome}`}
+                  </h3>
+
+                  <div className="mt-3 space-y-1.5 text-xs text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="text-slate-200 font-semibold">{event.cliente?.nome || '—'}</span>
                     </div>
 
-                    <div className="flex items-center justify-between text-slate-300">
-                      <span className="flex items-center gap-1.5 text-slate-400">
-                        <Clock className="w-3.5 h-3.5 text-brand-400" /> Horário:
-                      </span>
-                      <span>
-                        {event.horario} às {event.horario_termino || '22:00'} ({event.duracao}h)
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="truncate">{event.endereco ? `${event.endereco}, ${event.cidade}` : `${event.cidade} - ${event.estado}`}</span>
                     </div>
 
-                    <div className="flex items-start justify-between text-slate-300 gap-2">
-                      <span className="flex items-center gap-1.5 text-slate-400 shrink-0">
-                        <MapPin className="w-3.5 h-3.5 text-brand-400" /> Local:
-                      </span>
-                      <span className="text-right text-slate-300 truncate" title={event.endereco}>
-                        {event.endereco}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-slate-300 pt-1">
-                      <span className="flex items-center gap-1.5 text-slate-400">
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Valor Total:
-                      </span>
-                      <span className="font-extrabold text-emerald-400 text-sm">
-                        R$ {event.valor_total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>{event.duracao} hora(s) de apresentação</span>
                     </div>
                   </div>
 
-                  {/* Attractions Badges */}
                   {event.atracoes && event.atracoes.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {event.atracoes.map((ea) => (
-                        <span
-                          key={ea.id}
-                          className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 text-[10px] font-medium flex items-center gap-1"
-                        >
-                          <Sparkles className="w-2.5 h-2.5 text-purple-400" />
-                          {ea.atracao?.nome || 'Atração'}
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {event.atracoes.map((att) => (
+                        <span key={att.id} className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/20 font-medium">
+                          {att.nome}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Card Footer Actions */}
-                <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1">
-                    {/* Botão Google Agenda */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 block">Valor Acordado</span>
+                    <span className="font-bold text-emerald-400 text-sm">{formatCurrencyBRL(event.valor_total)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleSyncGoogle(event)}
                       disabled={syncingGoogleId === event.id}
-                      className="p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-500/15 rounded-lg transition-colors flex items-center gap-1"
-                      title="Abrir / Sincronizar com Google Agenda (roboledpartner@gmail.com)"
+                      className="p-2 rounded-xl bg-dark-900 border border-slate-800 text-purple-400 hover:text-white hover:bg-purple-600 transition-colors"
+                      title="Sincronizar no Google Agenda"
                     >
-                      <Calendar className="w-4 h-4 text-purple-400" />
-                      <span className="text-[10px] font-bold hidden sm:inline">Google</span>
+                      <Calendar className="w-3.5 h-3.5" />
                     </button>
+
+                    {!hasContract ? (
+                      <button
+                        onClick={() => handleGenerateContract(event)}
+                        disabled={generatingContractId === event.id}
+                        className="p-2 rounded-xl bg-dark-900 border border-slate-800 text-brand-400 hover:text-white hover:bg-brand-600 transition-colors"
+                        title="Gerar Contrato"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {contractNum}
+                      </span>
+                    )}
 
                     <button
                       onClick={() => handleOpenEditModal(event)}
-                      className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                      title="Editar Evento"
+                      className="p-2 rounded-xl bg-dark-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                      title="Editar"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
 
                     <button
                       onClick={() => handleDelete(event.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                      title="Excluir Evento"
+                      className="p-2 rounded-xl bg-dark-900 border border-slate-800 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors"
+                      title="Excluir"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-
-                  {hasContract ? (
-                    <a
-                      href={api.getContractPdfUrl(event.contrato?.id || event.contrato_id!)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-all"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      {contractNum}
-                      <ExternalLink className="w-3 h-3 text-emerald-400" />
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => handleGenerateContract(event)}
-                      disabled={generatingContractId === event.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white text-xs font-bold shadow-sm shadow-brand-600/25 transition-all active:scale-[0.98]"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      {generatingContractId === event.id ? 'Gerando...' : 'Gerar Contrato'}
-                    </button>
-                  )}
                 </div>
               </div>
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* Modal Agendar / Editar Evento */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-dark-850 border border-slate-700/80 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl my-8">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-brand-500/15 text-brand-400">
-                  <CalendarDays className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    {editingEventId ? 'Editar Evento' : 'Agendar Novo Evento'}
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Cadastre os dados da festa, cliente e atrações contratadas.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="card-glass border border-purple-500/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-purple-400" />
+                {editingEventId ? 'Editar Evento / Apresentação' : 'Agendar Nova Apresentação'}
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              {/* Google Calendar Notice */}
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-2.5 text-xs text-purple-300">
-                <Calendar className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>
-                  <strong>Google Agenda Ativo:</strong> Este evento será sincronizado na conta <code>roboledpartner@gmail.com</code>.
-                </span>
-              </div>
-
-              {/* SEÇÃO DADOS DO CLIENTE COM SELETOR DE CLIENTE EXISTENTE */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-brand-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5" /> Dados do Cliente
-                  </h4>
-
-                  {/* Toggle entre Cliente Cadastrado e Novo Cliente */}
-                  {clients.length > 0 && !editingEventId && (
-                    <div className="flex items-center gap-1 bg-dark-900 p-1 rounded-xl border border-slate-750">
-                      <button
-                        type="button"
-                        onClick={() => setClientMode('EXISTING')}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                          clientMode === 'EXISTING'
-                            ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-md shadow-brand-600/20'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Users className="w-3.5 h-3.5" />
-                        Cliente Cadastrado ({clients.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setClientMode('NEW');
-                          setSelectedClientId('');
-                          setFormData((prev) => ({
-                            ...prev,
-                            cliente_nome: '',
-                            cliente_cpf: '',
-                            cliente_telefone: '',
-                            cliente_email: '',
-                          }));
-                        }}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                          clientMode === 'NEW'
-                            ? 'bg-gradient-to-r from-brand-600 to-purple-600 text-white shadow-md shadow-brand-600/20'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Novo Cliente
-                      </button>
-                    </div>
-                  )}
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              {/* Cliente */}
+              <div>
+                <label className="block text-xs text-slate-300 font-medium mb-1">
+                  Cliente do Evento *
+                </label>
+                <div className="flex items-center gap-3 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setClientMode('EXISTING')}
+                    className={`text-xs px-3 py-1 rounded-lg border font-medium transition-all ${
+                      clientMode === 'EXISTING'
+                        ? 'bg-brand-600 text-white border-brand-500'
+                        : 'bg-dark-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    Selecionar Cadastrado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClientMode('NEW');
+                      setSelectedClientId('');
+                    }}
+                    className={`text-xs px-3 py-1 rounded-lg border font-medium transition-all ${
+                      clientMode === 'NEW'
+                        ? 'bg-brand-600 text-white border-brand-500'
+                        : 'bg-dark-800 text-slate-400 border-slate-700'
+                    }`}
+                  >
+                    Cadastrar Novo no Agendamento
+                  </button>
                 </div>
 
-                {/* Seleção de Cliente da Base Cadastrada */}
-                {clientMode === 'EXISTING' && clients.length > 0 && !editingEventId && (
-                  <div className="p-3.5 rounded-xl bg-gradient-to-br from-brand-950/40 to-purple-950/20 border border-brand-500/30 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="font-semibold text-brand-300 flex items-center gap-1.5">
-                        <Search className="w-3.5 h-3.5 text-brand-400" /> Selecione o cliente salvo na base:
-                      </label>
-                      {selectedClientId && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedClientId('');
-                            setFormData((prev) => ({
-                              ...prev,
-                              cliente_nome: '',
-                              cliente_cpf: '',
-                              cliente_telefone: '',
-                              cliente_email: '',
-                            }));
-                          }}
-                          className="text-[11px] text-rose-400 hover:underline"
-                        >
-                          Limpar seleção
-                        </button>
-                      )}
-                    </div>
-
+                {clientMode === 'EXISTING' ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Filtrar por nome, CPF ou fone..."
+                      value={clientFilterQuery}
+                      onChange={(e) => setClientFilterQuery(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
+                    />
                     <select
                       value={selectedClientId}
-                      onChange={(e) => handleSelectExistingClient(e.target.value ? Number(e.target.value) : '')}
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white focus:outline-none focus:border-brand-500 font-medium"
+                      onChange={(e) => handleSelectClient(Number(e.target.value))}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-brand-500"
+                      required
                     >
-                      <option value="">-- Clique aqui para escolher um cliente existente --</option>
-                      {clients.map((c) => (
+                      <option value="">-- Selecione o Cliente --</option>
+                      {filteredClients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.nome} • CPF/CNPJ: {c.cpf} {c.telefone ? `• ${c.telefone}` : ''}
+                          {c.nome} ({c.cpf ? `CPF: ${c.cpf}` : 'Sem CPF'}) {c.telefone ? `- ${c.telefone}` : ''}
                         </option>
                       ))}
                     </select>
-
-                    {selectedClientId ? (
-                      <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between text-[11px] text-emerald-300">
-                        <span className="flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          Dados de <strong>{formData.cliente_nome}</strong> vinculados ao evento!
-                        </span>
-                        <span className="text-[10px] text-emerald-400/80">Recontratação / Festa repetida</span>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-slate-400">
-                        Dica: Escolha um cliente acima para não precisar digitar o nome, CPF e telefone novamente.
-                      </p>
-                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-dark-800/60 border border-slate-700">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-0.5">Nome Completo *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.cliente_nome}
+                        onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-dark-900 border border-slate-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-0.5">CPF / Documento *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.cliente_cpf}
+                        onChange={(e) => setFormData({ ...formData, cliente_cpf: maskCPFInput(e.target.value) })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-dark-900 border border-slate-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-0.5">Telefone / WhatsApp *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.cliente_telefone}
+                        onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-dark-900 border border-slate-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-0.5">E-mail</label>
+                      <input
+                        type="email"
+                        value={formData.cliente_email}
+                        onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-dark-900 border border-slate-700 text-white"
+                      />
+                    </div>
                   </div>
                 )}
-
-                {/* Campos com os dados do cliente (auto-preenchidos ou editáveis) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Nome Completo *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.cliente_nome}
-                      onChange={(e) => setFormData({ ...formData, cliente_nome: e.target.value })}
-                      placeholder="Ex: Roberto Silva"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">CPF / CNPJ *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.cliente_cpf}
-                      onChange={(e) => handleCpfChange(e.target.value)}
-                      placeholder="000.000.000-00"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Telefone / WhatsApp</label>
-                    <input
-                      type="text"
-                      value={formData.cliente_telefone}
-                      onChange={(e) => setFormData({ ...formData, cliente_telefone: e.target.value })}
-                      placeholder="(11) 99999-9999"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">E-mail</label>
-                    <input
-                      type="email"
-                      value={formData.cliente_email}
-                      onChange={(e) => setFormData({ ...formData, cliente_email: e.target.value })}
-                      placeholder="cliente@email.com"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:border-brand-500"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Evento */}
-              <div className="pt-2 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-brand-400 uppercase tracking-wider mb-2">
-                  Dados do Evento & Local
-                </h4>
+              {/* Informações do Evento */}
+              <div className="pt-2 border-t border-slate-800 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Título do Evento / Identificação *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Casamento Beatriz & Lucas ou Festa 15 Anos"
+                      value={formData.nome_evento}
+                      onChange={(e) => setFormData({ ...formData, nome_evento: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Tipo de Evento</label>
+                    <select
+                      value={formData.tipo_evento}
+                      onChange={(e) => setFormData({ ...formData, tipo_evento: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white focus:outline-none focus:border-brand-500"
+                    >
+                      <option value="ANIVERSARIO">Aniversário Adulto</option>
+                      <option value="INFANTIL">Aniversário Infantil</option>
+                      <option value="DEBUTANTE">15 Anos / Debutante</option>
+                      <option value="CASAMENTO">Casamento / Bodas</option>
+                      <option value="CORPORATIVO">Evento Corporativo</option>
+                      <option value="FORMATURA">Formatura</option>
+                      <option value="OUTRO">Outro Tipo</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Data do Show *</label>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Data *</label>
                     <input
                       type="date"
                       required
@@ -965,7 +1205,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Horário Início *</label>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Horário de Início *</label>
                     <input
                       type="time"
                       required
@@ -975,7 +1215,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Duração (horas)</label>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Duração (Horas)</label>
                     <input
                       type="number"
                       step="0.5"
@@ -987,16 +1227,15 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs text-slate-300 font-medium mb-1">Endereço / Buffet *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-300 font-medium mb-1">Endereço / Buffet</label>
                     <input
                       type="text"
-                      required
+                      placeholder="Ex: Buffet Villa Kids, Av. Kennedy, 500"
                       value={formData.endereco}
                       onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                      placeholder="Ex: Buffet Estrela Encantada - Av. Paulista, 1000"
-                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white placeholder:text-slate-400 focus:outline-none focus:border-brand-500"
+                      className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white focus:outline-none focus:border-brand-500"
                     />
                   </div>
                   <div>
@@ -1053,8 +1292,8 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                     className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-emerald-400 font-bold focus:outline-none focus:border-brand-500"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Gera automaticamente Sinal de 40% (R${' '}
-                    {((formData.valor_total || 0) * 0.4).toFixed(2)}) e Saldo de 60% (R${' '}
+                    Gera automaticamente Sinal de 40% (R 
+                    {((formData.valor_total || 0) * 0.4).toFixed(2)}) e Saldo de 60% (R 
                     {((formData.valor_total || 0) * 0.6).toFixed(2)}).
                   </p>
                 </div>
