@@ -540,13 +540,13 @@ export const CustosPage: React.FC = () => {
 
               <div className="space-y-3.5">
                 {[
-                  { label: 'Cilindros de CO2', val: costsSummary.breakdownCustosEventos.cilindro, color: 'bg-cyan-500' },
-                  { label: 'Gerbs (Fogo Frio)', val: costsSummary.breakdownCustosEventos.gerb, color: 'bg-amber-500' },
-                  { label: 'Gasolina / Combustível', val: costsSummary.breakdownCustosEventos.gasolina, color: 'bg-red-500' },
-                  { label: 'Pedágio & Vallet', val: costsSummary.breakdownCustosEventos.pedagio + costsSummary.breakdownCustosEventos.vallet, color: 'bg-orange-500' },
-                  { label: 'Ajudantes & Monitores', val: costsSummary.breakdownCustosEventos.ajudante + costsSummary.breakdownCustosEventos.monitor, color: 'bg-purple-500' },
+                  { label: 'Cilindros de CO2', val: costsSummary.totalCilindro || 0, color: 'bg-cyan-500' },
+                  { label: 'Gerbs (Fogo Frio)', val: costsSummary.totalGerb || 0, color: 'bg-amber-500' },
+                  { label: 'Gasolina / Combustível', val: costsSummary.totalGasolina || 0, color: 'bg-red-500' },
+                  { label: 'Pedágio & Vallet', val: (costsSummary.totalPedagio || 0) + (costsSummary.totalVallet || 0), color: 'bg-orange-500' },
+                  { label: 'Ajudantes & Monitores', val: (costsSummary.totalAjudante || 0) + (costsSummary.totalMonitor || 0), color: 'bg-purple-500' },
                 ].map((item) => {
-                  const perc = costsSummary.totalCustosEventos > 0 ? (item.val / costsSummary.totalCustosEventos) * 100 : 0;
+                  const perc = (costsSummary.totalCustosEventos || 0) > 0 ? (item.val / costsSummary.totalCustosEventos) * 100 : 0;
                   return (
                     <div key={item.label} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
@@ -575,18 +575,18 @@ export const CustosPage: React.FC = () => {
                 Compras, Investimentos & Marketing
               </h3>
               <p className="text-xs text-slate-400 mb-4">
-                Total de {formatCurrencyBRL(costsSummary.totalDespesasGerais)} investidos na estrutura do negócio
+                Total de {formatCurrencyBRL(costsSummary.totalDespesasGerais || 0)} investidos na estrutura do negócio
               </p>
 
               <div className="space-y-3.5">
                 {[
-                  { label: 'Melhorias & Peças de Robô', val: costsSummary.breakdownDespesasGerais.MELHORIAS, color: 'bg-blue-500' },
-                  { label: 'Investimento em Estrutura / Mascotes', val: costsSummary.breakdownDespesasGerais.INVESTIMENTO, color: 'bg-purple-500' },
-                  { label: 'Manutenção Preventiva', val: costsSummary.breakdownDespesasGerais.MANUTENCAO, color: 'bg-amber-500' },
-                  { label: 'Marketing, Tráfego & Divulgação', val: costsSummary.breakdownDespesasGerais.MARKETING, color: 'bg-pink-500' },
-                  { label: 'Imprevistos & Outros', val: costsSummary.breakdownDespesasGerais.IMPREVISTO, color: 'bg-rose-500' },
+                  { label: 'Melhorias & Peças de Robô', val: costsSummary.totalMelhorias || 0, color: 'bg-blue-500' },
+                  { label: 'Investimento em Estrutura / Mascotes', val: costsSummary.totalInvestimentos || 0, color: 'bg-purple-500' },
+                  { label: 'Manutenção Preventiva', val: costsSummary.totalManutencao || 0, color: 'bg-amber-500' },
+                  { label: 'Marketing, Tráfego & Divulgação', val: costsSummary.totalMarketing || 0, color: 'bg-pink-500' },
+                  { label: 'Imprevistos & Outros', val: costsSummary.totalImprevistos || 0, color: 'bg-rose-500' },
                 ].map((item) => {
-                  const perc = costsSummary.totalDespesasGerais > 0 ? (item.val / costsSummary.totalDespesasGerais) * 100 : 0;
+                  const perc = (costsSummary.totalDespesasGerais || 0) > 0 ? (item.val / costsSummary.totalDespesasGerais) * 100 : 0;
                   return (
                     <div key={item.label} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">

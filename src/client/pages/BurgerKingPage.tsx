@@ -300,13 +300,28 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
     }
   };
 
-  const handleSettle = async (finId: number) => {
+  const handleSettleEventOrFin = async (event: EventDetails, finId?: number) => {
     try {
-      await api.settleFinancialEntry(finId, {
-        forma_pagamento: settleMethod,
-        data_pagamento: new Date().toISOString().split('T')[0],
-      });
-      success('Pagamento baixado com sucesso!');
+      if (finId) {
+        await api.settleFinancialEntry(finId, {
+          forma_pagamento: settleMethod,
+          data_pagamento: new Date().toISOString().split('T')[0],
+        });
+      } else {
+        const val = (event.valor_total && event.valor_total > 0) ? event.valor_total : 550;
+        await api.createFinancialEntry({
+          evento_id: event.id,
+          cliente_id: event.cliente_id,
+          tipo_parcela: 'SALDO_FINAL',
+          valor: val,
+          data_vencimento: event.data,
+          data_pagamento: new Date().toISOString().split('T')[0],
+          status: 'PAGO',
+          forma_pagamento: settleMethod,
+          descricao: `Recebimento BK - ${event.loja_unidade || event.endereco || 'Loja'}`,
+        });
+      }
+      success(`Pagamento baixado com sucesso para ${event.loja_unidade || event.endereco || 'evento'}!`);
       setSettlingEntryId(null);
       loadData();
     } catch (err: any) {
@@ -528,19 +543,18 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-800">
                         <span className="font-black text-amber-400 text-sm">
-                          {formatCurrencyBRL(fin?.valor || event.valor_total)}
+                          {formatCurrencyBRL(fin?.valor || (event.valor_total > 0 ? event.valor_total : 550))}
                         </span>
-                        {fin && (
-                          <button
-                            onClick={() => {
-                              setSettlingEntryId(fin.id);
-                              handleSettle(fin.id);
-                            }}
-                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all"
-                          >
-                            Dar Baixa
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (fin?.id) setSettlingEntryId(fin.id);
+                            handleSettleEventOrFin(event, fin?.id);
+                          }}
+                          className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Dar Baixa
+                        </button>
                       </div>
                     </div>
                   ))
@@ -582,19 +596,18 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-800">
                         <span className="font-black text-amber-400 text-sm">
-                          {formatCurrencyBRL(fin?.valor || event.valor_total)}
+                          {formatCurrencyBRL(fin?.valor || (event.valor_total > 0 ? event.valor_total : 550))}
                         </span>
-                        {fin && (
-                          <button
-                            onClick={() => {
-                              setSettlingEntryId(fin.id);
-                              handleSettle(fin.id);
-                            }}
-                            className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all"
-                          >
-                            Dar Baixa
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (fin?.id) setSettlingEntryId(fin.id);
+                            handleSettleEventOrFin(event, fin?.id);
+                          }}
+                          className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Dar Baixa
+                        </button>
                       </div>
                     </div>
                   ))
@@ -634,19 +647,18 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-800">
                         <span className="font-black text-neutral-200 text-sm">
-                          {formatCurrencyBRL(fin?.valor || event.valor_total)}
+                          {formatCurrencyBRL(fin?.valor || (event.valor_total > 0 ? event.valor_total : 550))}
                         </span>
-                        {fin && (
-                          <button
-                            onClick={() => {
-                              setSettlingEntryId(fin.id);
-                              handleSettle(fin.id);
-                            }}
-                            className="px-2.5 py-1 bg-neutral-800 hover:bg-emerald-500 hover:text-black font-semibold text-xs rounded-lg text-neutral-300 transition-all"
-                          >
-                            Dar Baixa
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (fin?.id) setSettlingEntryId(fin.id);
+                            handleSettleEventOrFin(event, fin?.id);
+                          }}
+                          className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Dar Baixa
+                        </button>
                       </div>
                     </div>
                   ))
@@ -686,19 +698,18 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-800">
                         <span className="font-black text-neutral-300 text-sm">
-                          {formatCurrencyBRL(fin?.valor || event.valor_total)}
+                          {formatCurrencyBRL(fin?.valor || (event.valor_total > 0 ? event.valor_total : 550))}
                         </span>
-                        {fin && (
-                          <button
-                            onClick={() => {
-                              setSettlingEntryId(fin.id);
-                              handleSettle(fin.id);
-                            }}
-                            className="px-2.5 py-1 bg-neutral-800 hover:bg-emerald-500 hover:text-black font-semibold text-xs rounded-lg text-neutral-300 transition-all"
-                          >
-                            Dar Baixa
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            if (fin?.id) setSettlingEntryId(fin.id);
+                            handleSettleEventOrFin(event, fin?.id);
+                          }}
+                          className="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-black font-semibold text-xs rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          Dar Baixa
+                        </button>
                       </div>
                     </div>
                   ))
@@ -778,9 +789,9 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {!isPaid && fin && (
+                            {!isPaid && (
                               <button
-                                onClick={() => handleSettle(fin.id)}
+                                onClick={() => handleSettleEventOrFin(evt, fin?.id)}
                                 title="Dar baixa no pagamento"
                                 className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all"
                               >
