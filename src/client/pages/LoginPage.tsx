@@ -108,16 +108,12 @@ export const LoginPage: React.FC = () => {
           
           {/* Logo & Brand Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-dark-800 border border-brand-500/30 shadow-[0_0_25px_rgba(236,72,153,0.25)] mb-3">
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-dark-950/80 border border-brand-500/30 shadow-[0_0_30px_rgba(236,72,153,0.3)] mb-3 group">
               <img
-                src="/assets/logo.png"
+                src="/assets/branding/logo.png"
                 alt="Robo Led Partner"
-                className="w-12 h-12 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
+                className="w-16 h-16 object-contain group-hover:scale-105 transition-transform duration-300"
               />
-              <Sparkles className="w-8 h-8 text-brand-400" />
             </div>
 
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2">
