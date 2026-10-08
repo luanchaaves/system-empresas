@@ -115,6 +115,12 @@ export function initDatabase(): void {
       google_calendar_enabled INTEGER DEFAULT 1,
       google_calendar_id TEXT DEFAULT 'roboledpartner@gmail.com',
       google_calendar_credentials TEXT DEFAULT '',
+      auth_enabled INTEGER DEFAULT 1,
+      admin_email TEXT DEFAULT 'roboledpartner@gmail.com',
+      admin_password_hash TEXT DEFAULT '1caa723959b0c0693512823dfdefb47d03d3540f69db8c43c26fe17e9fda37a2',
+      google_auth_client_id TEXT DEFAULT '',
+      google_auth_allowed_email TEXT DEFAULT 'roboledpartner@gmail.com',
+      jwt_secret TEXT DEFAULT 'rlp_live_jwt_secret_2026_super_secure',
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
@@ -124,6 +130,12 @@ export function initDatabase(): void {
   try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_enabled INTEGER DEFAULT 1;'); } catch {}
   try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_id TEXT DEFAULT "roboledpartner@gmail.com";'); } catch {}
   try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_calendar_credentials TEXT DEFAULT "";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN auth_enabled INTEGER DEFAULT 1;'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN admin_email TEXT DEFAULT "roboledpartner@gmail.com";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN admin_password_hash TEXT DEFAULT "1caa723959b0c0693512823dfdefb47d03d3540f69db8c43c26fe17e9fda37a2";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_auth_client_id TEXT DEFAULT "";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN google_auth_allowed_email TEXT DEFAULT "roboledpartner@gmail.com";'); } catch {}
+  try { db.exec('ALTER TABLE configuracoes ADD COLUMN jwt_secret TEXT DEFAULT "rlp_live_jwt_secret_2026_super_secure";'); } catch {}
 
 
   // 2. Clientes
@@ -507,6 +519,12 @@ export const CompanyRepository = {
       google_calendar_enabled: true,
       google_calendar_id: 'roboledpartner@gmail.com',
       google_calendar_credentials: '',
+      auth_enabled: true,
+      admin_email: 'roboledpartner@gmail.com',
+      admin_password_hash: '1caa723959b0c0693512823dfdefb47d03d3540f69db8c43c26fe17e9fda37a2',
+      google_auth_client_id: '',
+      google_auth_allowed_email: 'roboledpartner@gmail.com',
+      jwt_secret: 'rlp_live_jwt_secret_2026_super_secure',
     };
   },
   update(data: Partial<CompanyConfig>): CompanyConfig {
@@ -514,7 +532,7 @@ export const CompanyRepository = {
     const updated = { ...current, ...data, updated_at: new Date().toISOString() };
     db.prepare(`
       UPDATE configuracoes
-      SET company_name = ?, responsavel = ?, documento = ?, endereco = ?, telefone = ?, email = ?, cidade = ?, estado = ?, cep = ?, api_key = ?, google_calendar_enabled = ?, google_calendar_id = ?, google_calendar_credentials = ?, updated_at = ?
+      SET company_name = ?, responsavel = ?, documento = ?, endereco = ?, telefone = ?, email = ?, cidade = ?, estado = ?, cep = ?, api_key = ?, google_calendar_enabled = ?, google_calendar_id = ?, google_calendar_credentials = ?, auth_enabled = ?, admin_email = ?, admin_password_hash = ?, google_auth_client_id = ?, google_auth_allowed_email = ?, jwt_secret = ?, updated_at = ?
       WHERE id = 1
     `).run(
       updated.company_name,
@@ -530,6 +548,12 @@ export const CompanyRepository = {
       updated.google_calendar_enabled ? 1 : 0,
       updated.google_calendar_id || 'roboledpartner@gmail.com',
       updated.google_calendar_credentials || '',
+      updated.auth_enabled ? 1 : 0,
+      updated.admin_email || 'roboledpartner@gmail.com',
+      updated.admin_password_hash || current.admin_password_hash || '1caa723959b0c0693512823dfdefb47d03d3540f69db8c43c26fe17e9fda37a2',
+      updated.google_auth_client_id || '',
+      updated.google_auth_allowed_email || 'roboledpartner@gmail.com',
+      updated.jwt_secret || current.jwt_secret || 'rlp_live_jwt_secret_2026_super_secure',
       updated.updated_at
     );
     return updated;

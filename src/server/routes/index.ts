@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { AuthController } from '../controllers/auth.controller.js';
 import { ContractController } from '../controllers/contract.controller.js';
 import { ConfigController } from '../controllers/config.controller.js';
 import { DashboardController } from '../controllers/dashboard.controller.js';
@@ -8,9 +9,31 @@ import { AttractionController } from '../controllers/attraction.controller.js';
 import { ClientController } from '../controllers/client.controller.js';
 import { IntegrationController } from '../controllers/integration.controller.js';
 import { CostController } from '../controllers/cost.controller.js';
-import { requireApiKey } from '../middlewares/auth.middleware.js';
+import { requireAuth, requireApiKey } from '../middlewares/auth.middleware.js';
 
 export const apiRouter = Router();
+
+// ==========================================
+// 0. Autenticação & Segurança (Público & Protegido)
+// ==========================================
+apiRouter.post('/auth/login', AuthController.login);
+apiRouter.post('/auth/google', AuthController.loginGoogle);
+apiRouter.get('/auth/config', AuthController.getPublicConfig);
+apiRouter.get('/auth/me', requireAuth, AuthController.me);
+apiRouter.post('/auth/change-password', requireAuth, AuthController.changePassword);
+
+// ==========================================
+// 8. Integração Externa API REST v1 (API Key Header)
+// ==========================================
+apiRouter.post('/v1/eventos/importar', requireApiKey, IntegrationController.importEvent);
+apiRouter.post('/v1/financeiro/webhook', requireApiKey, IntegrationController.financialWebhook);
+apiRouter.get('/v1/eventos', requireApiKey, EventController.list);
+apiRouter.get('/v1/clientes', requireApiKey, ClientController.list);
+
+// ==========================================
+// Middleware de Proteção para Rotas Internas do Sistema
+// ==========================================
+apiRouter.use(requireAuth);
 
 // 1. Dashboard
 apiRouter.get('/dashboard', DashboardController.getStats);
@@ -86,13 +109,6 @@ apiRouter.put('/configuracoes', ConfigController.update);
 apiRouter.post('/configuracoes/gerar-api-key', ConfigController.generateApiKey);
 apiRouter.post('/configuracoes/google-test', ConfigController.testGoogleCalendar);
 
-
-// 8. Integração Externa API REST v1 (LED Partner / Webhooks)
-apiRouter.post('/v1/eventos/importar', requireApiKey, IntegrationController.importEvent);
-apiRouter.post('/v1/financeiro/webhook', requireApiKey, IntegrationController.financialWebhook);
-apiRouter.get('/v1/eventos', requireApiKey, EventController.list);
-apiRouter.get('/v1/clientes', requireApiKey, ClientController.list);
-
 // 9. Carga de Eventos das Planilhas
 apiRouter.post('/seed/import-sheet-events', async (_req, res) => {
   try {
@@ -103,4 +119,3 @@ apiRouter.post('/seed/import-sheet-events', async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-

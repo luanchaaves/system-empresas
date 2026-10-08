@@ -31,7 +31,27 @@ export interface CompanyConfig {
   google_calendar_enabled?: boolean | number;
   google_calendar_id?: string;
   google_calendar_credentials?: string;
+  auth_enabled?: boolean | number;
+  admin_email?: string;
+  admin_password_hash?: string;
+  google_auth_client_id?: string;
+  google_auth_allowed_email?: string;
+  jwt_secret?: string;
   updated_at?: string;
+}
+
+export interface UserProfile {
+  email: string;
+  name: string;
+  picture?: string;
+  role: 'ADMIN';
+}
+
+export interface AuthState {
+  user: UserProfile | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  loading: boolean;
 }
 
 
