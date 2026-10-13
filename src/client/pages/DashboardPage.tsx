@@ -5,27 +5,33 @@ import {
   DollarSign,
   Bot,
   Users,
-  ArrowUpRight,
   Eye,
   Download,
   Clock,
   Sparkles,
   TrendingUp,
   BarChart3,
-  Layers,
   CheckCircle2,
   AlertCircle,
-  XCircle,
   CalendarDays,
   ChevronRight,
   ArrowRight,
-  Filter,
+  PhoneCall,
+  Mail,
+  Check,
+  Plus,
+  Store,
+  MapPin,
+  ChevronLeft,
+  Settings,
+  MoreVertical,
+  ExternalLink,
 } from 'lucide-react';
 import { StatsCard } from '../components/StatsCard.js';
-import { StatusBadge, AttractionBadge } from '../components/Badge.js';
+import { StatusBadge } from '../components/Badge.js';
 import { ContractPreviewModal } from '../components/ContractPreviewModal.js';
 import { api } from '../api/index.js';
-import { DashboardStats, Contract, MonthlyEventStats, YearlyEventStats } from '../../types/index.js';
+import { DashboardStats, Contract, EventDetails, MonthlyEventStats } from '../../types/index.js';
 import { formatCurrencyBRL } from '../../domain/calculations.js';
 import { formatDateBR } from '../../domain/date.js';
 
@@ -36,8 +42,6 @@ interface DashboardPageProps {
   onNavigateToFinancial?: () => void;
 }
 
-type DashboardTab = 'geral' | 'eventos_mes' | 'faturamento_mes' | 'resumo_anual';
-
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigateToNew,
   onNavigateToContracts,
@@ -46,22 +50,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentContracts, setRecentContracts] = useState<Contract[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<DashboardTab>('geral');
-  const [selectedYear, setSelectedYear] = useState<number | 'ALL'>('ALL');
   const [previewContractId, setPreviewContractId] = useState<number | null>(null);
   const [previewNumber, setPreviewNumber] = useState<string>('');
   const [isGeneratingBatch, setIsGeneratingBatch] = useState(false);
 
+  // Sub-aba ativa na tabela principal
+  const [tableTab, setTableTab] = useState<'EVENTOS' | 'CONTRATOS' | 'MENSAL'>('EVENTOS');
+
+  // Mini-Calendário State (Semana atual)
+  const [selectedDayOffset, setSelectedDayOffset] = useState<number>(0);
+
   const loadData = async () => {
     try {
       setLoading(true);
-      const [statsData, contractsData] = await Promise.all([
+      const [statsData, contractsData, eventsData] = await Promise.all([
         api.getDashboard(),
         api.getContracts(),
+        api.getEvents({ onlyUpcoming: true }),
       ]);
       setStats(statsData);
       setRecentContracts(contractsData.slice(0, 8));
+      setUpcomingEvents(eventsData.slice(0, 8));
     } catch (err) {
       console.error('Erro ao carregar dashboard:', err);
     } finally {
@@ -88,698 +99,571 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
     }
   };
 
-  // Anos disponíveis
-  const availableYears = useMemo(() => {
+  // Dias da semana para o Mini-Calendário (Ex: Seg, Ter, Qua, Qui, Sex, Sáb, Dom)
+  const weekDays = useMemo(() => {
+    const today = new Date();
+    const days = [];
+    // Gera 7 dias a partir de 3 dias atrás até 3 dias à frente
+    for (let i = -3; i <= 3; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayNum = d.getDate();
+      const weekName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase();
+      const dateStr = d.toISOString().split('T')[0];
+      const isToday = i === 0;
+      const isSelected = i === selectedDayOffset;
+
+      // Conta quantos eventos tem neste dia
+      const eventsOnDay = upcomingEvents.filter((e) => e.data === dateStr);
+
+      days.push({
+        offset: i,
+        dayNum,
+        weekName,
+        dateStr,
+        isToday,
+        isSelected,
+        hasEvents: eventsOnDay.length > 0,
+        eventCount: eventsOnDay.length,
+      });
+    }
+    return days;
+  }, [upcomingEvents, selectedDayOffset]);
+
+  // Eventos do dia selecionado no calendário
+  const selectedDayEvents = useMemo(() => {
+    const selected = weekDays.find((d) => d.offset === selectedDayOffset);
+    if (!selected) return [];
+    return upcomingEvents.filter((e) => e.data === selected.dateStr);
+  }, [weekDays, selectedDayOffset, upcomingEvents]);
+
+  // Mensal Faturamento para gráfico de colunas
+  const monthlyStats = useMemo(() => {
     if (!stats?.eventosPorMes) return [];
-    const years = Array.from(new Set(stats.eventosPorMes.map((m) => m.ano))).sort((a, b) => a - b);
-    return years;
+    return stats.eventosPorMes.slice(-6); // últimos 6 meses
   }, [stats]);
 
-  // Eventos por mês filtrados pelo ano selecionado
-  const filteredMonthlyStats = useMemo(() => {
-    if (!stats?.eventosPorMes) return [];
-    if (selectedYear === 'ALL') return stats.eventosPorMes;
-    return stats.eventosPorMes.filter((m) => m.ano === selectedYear);
-  }, [stats, selectedYear]);
-
-  // Faturamento máximo mensal para escala de gráfico
-  const maxMonthlyRevenue = useMemo(() => {
-    if (!filteredMonthlyStats.length) return 1000;
-    const max = Math.max(...filteredMonthlyStats.map((m) => m.faturamentoTotal));
+  const maxRevenue = useMemo(() => {
+    if (!monthlyStats.length) return 1000;
+    const max = Math.max(...monthlyStats.map((m) => m.faturamentoTotal));
     return max > 0 ? max : 1000;
-  }, [filteredMonthlyStats]);
+  }, [monthlyStats]);
 
-  // Eventos máximo mensal para escala de gráfico
-  const maxMonthlyEvents = useMemo(() => {
-    if (!filteredMonthlyStats.length) return 10;
-    const max = Math.max(...filteredMonthlyStats.map((m) => m.totalEventos));
-    return max > 0 ? max : 10;
-  }, [filteredMonthlyStats]);
+  // Saudação de acordo com a hora
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }, []);
+
+  const todayFormatted = useMemo(() => {
+    return new Date().toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  }, []);
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6 animate-pulse">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-dark-800/60" />
+      <div className="p-6 sm:p-8 space-y-6 animate-pulse">
+        <div className="h-44 rounded-3xl bg-slate-200" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-slate-200" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-72 rounded-2xl bg-dark-800/60" />
-          <div className="h-72 rounded-2xl bg-dark-800/60" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-96 rounded-3xl bg-slate-200" />
+          <div className="h-96 rounded-3xl bg-slate-200" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
-      {/* Top Banner Quick Overview */}
-      <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-r from-dark-800 via-dark-800 to-brand-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Ambient Glow Background Effect */}
-        <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-brand-600/10 via-purple-600/5 to-transparent pointer-events-none" />
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
+      {/* ==================== GRID PRINCIPAL ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+        
+        {/* ==================== COLUNA ESQUERDA (8 COLUNAS) ==================== */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* 1. Hero Greeting Banner */}
+          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-[#7052ff] via-[#7c5cfc] to-[#9274fc] text-white shadow-primary-glow">
+            {/* Soft decorative background circles */}
+            <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 right-24 w-48 h-48 rounded-full bg-white/15 blur-xl pointer-events-none" />
 
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="relative w-16 h-16 rounded-2xl bg-dark-900 border border-brand-500/40 shadow-lg shadow-brand-500/25 overflow-hidden shrink-0 flex items-center justify-center group">
-            <img
-              src="/assets/branding/robo-avatar.png"
-              alt="Robo Led Partner"
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 text-brand-400 font-semibold text-xs tracking-wider uppercase">
-              <Sparkles className="w-4 h-4 text-brand-400 animate-pulse" /> Gestão Operacional & Inteligência de Eventos
-            </div>
-            <h2 className="text-2xl font-black text-white mt-1 tracking-tight flex items-center gap-2">
-              <span>Painel Geral da Robo Led Partner</span>
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Acompanhe a evolução mensal e anual de eventos, faturamento contratado e contratos gerados.
-            </p>
-          </div>
-        </div>
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-md">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-white/20 text-white backdrop-blur-md inline-block uppercase tracking-wider">
+                  {todayFormatted}
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                  {greeting}, Luan Chaves!
+                </h1>
+                <p className="text-xs sm:text-sm text-purple-100 font-medium leading-relaxed">
+                  Tudo pronto para as apresentações de hoje. Acompanhe os contratos, shows do Burger King e fluxo financeiro em tempo real.
+                </p>
 
-        <div className="flex items-center gap-2.5 flex-wrap relative z-10">
-          <button
-            onClick={handleGenerateAllContracts}
-            disabled={isGeneratingBatch}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50"
-            title="Gera contrato e PDF para todos os eventos da base"
-          >
-            <FileText className="w-3.5 h-3.5 text-brand-400" />
-            {isGeneratingBatch ? 'Gerando...' : 'Padronizar Contratos'}
-          </button>
-          <button
-            onClick={onNavigateToNew}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 via-pink-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            + Criar Novo Contrato
-          </button>
-        </div>
-      </div>
-
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatsCard
-          title="Contratos Gerados"
-          value={stats?.totalContratos || 0}
-          subtitle="Documentos emitidos"
-          icon={FileText}
-          iconColor="text-brand-400"
-        />
-        <StatsCard
-          title="Total de Eventos"
-          value={stats?.totalEventos || 0}
-          subtitle={`${stats?.eventosFuturos || 0} futuros`}
-          icon={Calendar}
-          iconColor="text-emerald-400"
-          accentGradient="from-emerald-600/20 to-teal-600/10"
-        />
-        <StatsCard
-          title="Contratos Robô LED"
-          value={stats?.contratosRoboLed || 0}
-          subtitle="Apresentações"
-          icon={Bot}
-          iconColor="text-cyan-400"
-          accentGradient="from-cyan-600/20 to-blue-600/10"
-        />
-        <StatsCard
-          title="Personagens Vivos"
-          value={stats?.contratosPersonagens || 0}
-          subtitle="La Casa / Cosplays"
-          icon={Users}
-          iconColor="text-purple-400"
-          accentGradient="from-purple-600/20 to-pink-600/10"
-        />
-        <StatsCard
-          title="Faturamento Total"
-          value={formatCurrencyBRL(stats?.valorTotalContratado || 0, true)}
-          subtitle={`${formatCurrencyBRL(stats?.valorTotalRecebido || 0, true)} recebido`}
-          icon={DollarSign}
-          iconColor="text-amber-400"
-          accentGradient="from-amber-600/20 to-orange-600/10"
-        />
-      </div>
-
-      {/* Tabs Switcher for Monthly / Yearly Analytics */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-2">
-        <div className="flex items-center gap-2 bg-dark-800/80 p-1.5 rounded-2xl border border-slate-800">
-          <button
-            onClick={() => setActiveTab('geral')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'geral'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" /> Visão Geral
-          </button>
-          <button
-            onClick={() => setActiveTab('eventos_mes')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'eventos_mes'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <CalendarDays className="w-3.5 h-3.5" /> Eventos por Mês
-          </button>
-          <button
-            onClick={() => setActiveTab('faturamento_mes')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'faturamento_mes'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5" /> Faturamento por Mês
-          </button>
-          <button
-            onClick={() => setActiveTab('resumo_anual')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'resumo_anual'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" /> Resumo por Ano
-          </button>
-        </div>
-
-        {/* Seletor de Ano quando nas abas mensais */}
-        {(activeTab === 'eventos_mes' || activeTab === 'faturamento_mes') && (
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs text-slate-400 font-medium">Filtrar Ano:</span>
-            <div className="flex items-center gap-1 bg-dark-800 p-1 rounded-xl border border-slate-700">
-              <button
-                onClick={() => setSelectedYear('ALL')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                  selectedYear === 'ALL' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Todos
-              </button>
-              {availableYears.map((yr) => (
-                <button
-                  key={yr}
-                  onClick={() => setSelectedYear(yr)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                    selectedYear === yr ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {yr}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ================= ABA 1: VISÃO GERAL ================= */}
-      {activeTab === 'geral' && (
-        <div className="space-y-8">
-          {/* Main Grid: Próximos Eventos & Últimos Contratos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Próximos Eventos */}
-            <div className="card-glass rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Próximos Eventos</h3>
-                      <p className="text-[11px] text-slate-400">Cronograma de apresentações confirmadas</p>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2.5 pt-2 flex-wrap">
+                  <button
+                    onClick={onNavigateToNew}
+                    className="px-4 py-2 rounded-xl bg-white text-primary-700 font-bold text-xs shadow-md hover:bg-purple-50 transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Novo Contrato
+                  </button>
                   {onNavigateToEvents && (
                     <button
                       onClick={onNavigateToEvents}
-                      className="text-xs font-semibold text-brand-400 hover:text-brand-300 flex items-center gap-1"
+                      className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center gap-1.5"
                     >
-                      Ver todos <ArrowUpRight className="w-3.5 h-3.5" />
+                      <CalendarDays className="w-3.5 h-3.5" /> Ver Agenda de Shows
                     </button>
                   )}
                 </div>
+              </div>
 
-                {stats?.proximosEventos && stats.proximosEventos.length > 0 ? (
-                  <div className="space-y-3">
-                    {stats.proximosEventos.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="p-3.5 rounded-xl bg-dark-800/80 border border-slate-700/50 flex items-center justify-between hover:border-slate-600 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 rounded-xl bg-slate-800 text-center min-w-[52px] border border-slate-700">
-                            <div className="text-[10px] uppercase font-bold text-slate-400">
-                              {new Date(ev.data_evento + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short' })}
-                            </div>
-                            <div className="text-base font-black text-white leading-tight">
-                              {new Date(ev.data_evento + 'T00:00:00').getDate()}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-white flex items-center gap-2">
-                              {ev.cliente_nome}
-                              {ev.numero && (
-                                <span className="text-[10px] text-brand-400 font-mono">({ev.numero})</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <AttractionBadge tipo={ev.tipo} personagem={ev.personagem} />
-                              {ev.horario && (
-                                <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
-                                  <Clock className="w-3 h-3 text-slate-400" /> {ev.horario}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+              {/* Avatar / Robot Illustration */}
+              <div className="hidden sm:flex relative shrink-0">
+                <div className="w-24 h-24 rounded-2xl bg-white/20 p-2 backdrop-blur-md border border-white/30 shadow-lg flex items-center justify-center">
+                  <img
+                    src="/assets/branding/robo-avatar.png"
+                    alt="Robô LED Partner"
+                    className="w-full h-full object-cover rounded-xl"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <Bot className="w-12 h-12 text-white absolute hidden" />
+                </div>
+              </div>
+            </div>
+          </div>
 
-                        <div className="text-right flex items-center gap-3">
-                          <div>
-                            <div className="text-xs font-bold text-white">{formatCurrencyBRL(ev.valor_total, true)}</div>
-                            <StatusBadge status={ev.status_evento} />
-                          </div>
-                          {ev.contrato_id && (
+          {/* 2. Weekly Reports / Resumo Operacional (4 Cards Pastel) */}
+          <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                <span>Resumo Operacional & Métricas</span>
+              </h2>
+              <span className="text-[11px] font-semibold text-slate-400">Tempo Real</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {/* Card 1: Clientes / Atendimentos (Yellow Pastel) */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500">Base Clientes</span>
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/60">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900">{stats?.totalClientes || 0}</div>
+                  <span className="text-[10px] text-amber-600 font-bold mt-0.5 block">Cadastrados</span>
+                </div>
+              </div>
+
+              {/* Card 2: Contratos Emitidos (Rose/Coral Pastel) */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500">Contratos</span>
+                  <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-200/60">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900">{stats?.totalContratos || 0}</div>
+                  <span className="text-[10px] text-rose-600 font-bold mt-0.5 block">Gerados</span>
+                </div>
+              </div>
+
+              {/* Card 3: Shows / Eventos Confirmados (Mint Pastel) */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500">Shows / Agenda</span>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl font-black text-slate-900">{stats?.totalEventos || 0}</div>
+                  <span className="text-[10px] text-emerald-600 font-bold mt-0.5 block">Confirmados</span>
+                </div>
+              </div>
+
+              {/* Card 4: Faturamento Total (Purple Pastel) */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500">Faturamento</span>
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200/60">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg sm:text-xl font-black text-primary-700 truncate">
+                    {formatCurrencyBRL(stats?.faturamentoTotal || 0)}
+                  </div>
+                  <span className="text-[10px] text-purple-600 font-bold mt-0.5 block">Total Contratado</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Work with Clients / Tabela Principal de Eventos & Contratos */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-clean overflow-hidden">
+            {/* Header da Tabela com Tabs */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">Atividades & Próximos Shows</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Acompanhamento operacional de clientes e contratos</p>
+              </div>
+
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 border border-slate-200/60 text-xs font-bold">
+                <button
+                  onClick={() => setTableTab('EVENTOS')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    tableTab === 'EVENTOS'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Próximos Shows ({upcomingEvents.length})
+                </button>
+                <button
+                  onClick={() => setTableTab('CONTRATOS')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    tableTab === 'CONTRATOS'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Contratos Recentes ({recentContracts.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo da Tabela */}
+            <div className="overflow-x-auto">
+              {tableTab === 'EVENTOS' ? (
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    <tr>
+                      <th className="py-3.5 px-5">Cliente / Loja</th>
+                      <th className="py-3.5 px-4">Local / Cidade</th>
+                      <th className="py-3.5 px-4">Data & Horário</th>
+                      <th className="py-3.5 px-4">Valor</th>
+                      <th className="py-3.5 px-4 text-center">Status</th>
+                      <th className="py-3.5 px-5 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {upcomingEvents.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                          Nenhum evento futuro agendado no momento.
+                        </td>
+                      </tr>
+                    ) : (
+                      upcomingEvents.map((evt) => {
+                        const isBK = Boolean(evt.loja_unidade);
+                        return (
+                          <tr key={evt.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3.5 px-5">
+                              <div className="flex items-center gap-3">
+                                {isBK ? (
+                                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                                    <Store className="w-4 h-4" />
+                                  </div>
+                                ) : (
+                                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-primary-700 flex items-center justify-center shrink-0 font-bold border border-purple-200">
+                                    {evt.cliente_nome ? evt.cliente_nome.charAt(0).toUpperCase() : 'E'}
+                                  </div>
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-bold text-slate-900 truncate max-w-[180px]">
+                                    {evt.loja_unidade || evt.cliente_nome || evt.nome_evento}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 truncate">
+                                    {evt.tipo_evento === 'CORPORATIVO_BK' ? 'Burger King B2B' : evt.tipo_evento}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-1.5 text-slate-700">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate max-w-[140px]">{evt.cidade || evt.endereco || 'São Paulo'}</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 font-mono">
+                              <div className="font-bold text-slate-800">{evt.data.split('-').reverse().join('/')}</div>
+                              <div className="text-[11px] text-slate-400">{evt.horario} ({evt.duracao}h)</div>
+                            </td>
+
+                            <td className="py-3.5 px-4 font-black text-slate-900 font-mono">
+                              {formatCurrencyBRL(evt.valor_total)}
+                            </td>
+
+                            <td className="py-3.5 px-4 text-center">
+                              <StatusBadge status={evt.status} />
+                            </td>
+
+                            <td className="py-3.5 px-5 text-right">
+                              {onNavigateToEvents && (
+                                <button
+                                  onClick={onNavigateToEvents}
+                                  className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                  title="Ver na Agenda"
+                                >
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    <tr>
+                      <th className="py-3.5 px-5">Nº Contrato</th>
+                      <th className="py-3.5 px-4">Cliente</th>
+                      <th className="py-3.5 px-4">Data do Show</th>
+                      <th className="py-3.5 px-4">Valor Total</th>
+                      <th className="py-3.5 px-4 text-center">Status</th>
+                      <th className="py-3.5 px-5 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {recentContracts.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                          Nenhum contrato gerado recentemente.
+                        </td>
+                      </tr>
+                    ) : (
+                      recentContracts.map((c) => (
+                        <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-5 font-bold font-mono text-primary-700">
+                            {c.numero_contrato}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-slate-900">
+                            {c.cliente_nome}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-slate-700">
+                            {formatDateBR(c.data_evento)}
+                          </td>
+                          <td className="py-3.5 px-4 font-black text-slate-900 font-mono">
+                            {formatCurrencyBRL(c.valor_total)}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <StatusBadge status={c.status} />
+                          </td>
+                          <td className="py-3.5 px-5 text-right">
                             <button
                               onClick={() => {
-                                setPreviewContractId(ev.contrato_id!);
-                                setPreviewNumber(ev.numero || '');
+                                setPreviewContractId(c.id);
+                                setPreviewNumber(c.numero_contrato);
                               }}
-                              className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                              title="Visualizar Contrato"
+                              className="px-2.5 py-1 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold text-[11px] transition-colors"
                             >
-                              <Eye className="w-4 h-4" />
+                              Ver Contrato
                             </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-slate-400 text-xs">
-                    Nenhum evento futuro agendado no momento.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Últimos Contratos Gerados */}
-            <div className="card-glass rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Contratos Padronizados</h3>
-                      <p className="text-[11px] text-slate-400">Documentos emitidos vinculados aos eventos</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onNavigateToContracts}
-                    className="text-xs font-semibold text-brand-400 hover:text-brand-300 flex items-center gap-1"
-                  >
-                    Histórico completo <ArrowUpRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {recentContracts.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentContracts.map((c) => (
-                      <div
-                        key={c.id}
-                        className="p-3.5 rounded-xl bg-dark-800/80 border border-slate-700/50 flex items-center justify-between hover:border-slate-600 transition-colors"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-brand-400 font-mono">{c.numero}</span>
-                            <span className="text-xs font-semibold text-white">{c.cliente?.nome}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <AttractionBadge tipo={c.tipo} personagem={c.personagem} quantidade={c.quantidade_personagens} />
-                            <span className="text-[11px] text-slate-400">
-                              Evento: {formatDateBR(c.evento?.data)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="text-right mr-2">
-                            <div className="text-xs font-bold text-white">{formatCurrencyBRL(c.valor_total, true)}</div>
-                            <div className="text-[10px] text-slate-400">40% / 60%</div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setPreviewContractId(c.id);
-                              setPreviewNumber(c.numero);
-                            }}
-                            className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                            title="Visualizar Contrato"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <a
-                            href={api.getContractPdfUrl(c.id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-lg bg-brand-600/30 text-brand-300 hover:bg-brand-600 hover:text-white transition-colors"
-                            title="Baixar PDF"
-                          >
-                            <Download className="w-4 h-4" />
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-slate-400 text-xs">
-                    Nenhum contrato gerado ainda. Clique em "Padronizar Contratos" ou "Novo Contrato".
-                  </div>
-                )}
-              </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
-      )}
 
-      {/* ================= ABA 2: EVENTOS POR MÊS ================= */}
-      {activeTab === 'eventos_mes' && (
-        <div className="space-y-6">
-          {/* Header informativo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-dark-800/80 border border-slate-800 flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                <CalendarDays className="w-5 h-5" />
-              </div>
+        {/* ==================== COLUNA DIREITA (4 COLUNAS) ==================== */}
+        <div className="lg:col-span-4 space-y-6">
+
+          {/* 1. Mini-Calendário Interativo (Schedule Calendar) */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-clean p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-slate-400 font-medium">Total no Período</div>
-                <div className="text-xl font-black text-white">
-                  {filteredMonthlyStats.reduce((acc, m) => acc + m.totalEventos, 0)} Eventos
-                </div>
+                <h3 className="font-extrabold text-slate-900 text-sm">Schedule Calendar</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Escala de shows da semana</p>
               </div>
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs">
+                {new Date().toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).toUpperCase()}
+              </span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-dark-800/80 border border-slate-800 flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs text-slate-400 font-medium">Eventos Realizados</div>
-                <div className="text-xl font-black text-emerald-400">
-                  {filteredMonthlyStats.reduce((acc, m) => acc + m.eventosRealizados, 0)}
-                </div>
-              </div>
+            {/* Strip de dias horizontais */}
+            <div className="grid grid-cols-7 gap-1.5 pt-1">
+              {weekDays.map((d) => (
+                <button
+                  key={d.offset}
+                  onClick={() => setSelectedDayOffset(d.offset)}
+                  className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-2xl transition-all ${
+                    d.isSelected
+                      ? 'bg-[#7052ff] text-white shadow-primary-glow font-bold'
+                      : d.isToday
+                      ? 'bg-purple-50 text-primary-700 font-bold border border-purple-200'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-600 font-semibold'
+                  }`}
+                >
+                  <span className={`text-[10px] ${d.isSelected ? 'text-purple-200' : 'text-slate-400'}`}>
+                    {d.weekName}
+                  </span>
+                  <span className="text-sm font-black mt-0.5 leading-none">
+                    {d.dayNum}
+                  </span>
+                  {d.hasEvents && (
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
+                        d.isSelected ? 'bg-amber-300' : 'bg-primary-600'
+                      }`}
+                    />
+                  )}
+                </button>
+              ))}
             </div>
 
-            <div className="p-4 rounded-2xl bg-dark-800/80 border border-slate-800 flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs text-slate-400 font-medium">Eventos Agendados</div>
-                <div className="text-xl font-black text-cyan-400">
-                  {filteredMonthlyStats.reduce((acc, m) => acc + m.eventosAgendados, 0)}
+            {/* Card com detalhes do dia selecionado */}
+            <div className="pt-2 border-t border-slate-100">
+              {selectedDayEvents.length === 0 ? (
+                <div className="p-3.5 rounded-2xl bg-slate-50 text-center text-xs text-slate-400">
+                  Nenhum show agendado para esta data.
                 </div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-dark-800/80 border border-slate-800 flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                <XCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs text-slate-400 font-medium">Cancelados</div>
-                <div className="text-xl font-black text-rose-400">
-                  {filteredMonthlyStats.reduce((acc, m) => acc + m.eventosCancelados, 0)}
+              ) : (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    {selectedDayEvents.length} Show(s) nesta data:
+                  </span>
+                  {selectedDayEvents.map((evt) => (
+                    <div
+                      key={evt.id}
+                      className="p-3 rounded-2xl bg-purple-50/60 border border-purple-100 flex items-center justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 text-xs truncate">
+                          {evt.loja_unidade || evt.cliente_nome || evt.nome_evento}
+                        </p>
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3 text-primary-600" /> {evt.horario} ({evt.duracao}h)
+                        </p>
+                      </div>
+                      <span className="font-black text-primary-700 text-xs font-mono shrink-0">
+                        {formatCurrencyBRL(evt.valor_total)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Gráfico de Barras de Eventos por Mês */}
-          <div className="card-glass rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
+          {/* 2. Earnings / Gráfico de Faturamento */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-clean p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-brand-400" /> Volume de Eventos por Mês
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faturamento</span>
+                <h3 className="text-xl font-black text-slate-900 leading-tight">
+                  {formatCurrencyBRL(stats?.faturamentoTotal || 0)}
                 </h3>
-                <p className="text-xs text-slate-400">Distribuição mensal do volume de festas e apresentações</p>
+              </div>
+              <div className="p-2 rounded-xl bg-purple-50 text-primary-600">
+                <TrendingUp className="w-4 h-4" />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-2">
-              {filteredMonthlyStats.map((m) => {
-                const heightPercent = Math.max(12, Math.round((m.totalEventos / maxMonthlyEvents) * 100));
-                return (
-                  <div
-                    key={m.mes}
-                    className="p-3.5 rounded-xl bg-dark-800/90 border border-slate-700/60 hover:border-brand-500/50 transition-all flex flex-col justify-between group"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-brand-300 font-mono">{m.mesFormatado}</span>
-                        <span className="text-sm font-black text-white">{m.totalEventos}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-1">
-                        {formatCurrencyBRL(m.faturamentoTotal, true)}
-                      </div>
-                    </div>
-
-                    {/* Barra visual de eventos */}
-                    <div className="mt-3">
-                      <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden flex">
-                        <div
-                          style={{ width: `${(m.eventosRealizados / (m.totalEventos || 1)) * 100}%` }}
-                          className="bg-emerald-500 h-full"
-                          title={`Realizados: ${m.eventosRealizados}`}
-                        />
-                        <div
-                          style={{ width: `${(m.eventosAgendados / (m.totalEventos || 1)) * 100}%` }}
-                          className="bg-cyan-500 h-full"
-                          title={`Agendados: ${m.eventosAgendados}`}
-                        />
-                        <div
-                          style={{ width: `${(m.eventosCancelados / (m.totalEventos || 1)) * 100}%` }}
-                          className="bg-rose-500 h-full"
-                          title={`Cancelados: ${m.eventosCancelados}`}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5 font-medium">
-                        <span className="text-emerald-400">✓ {m.eventosRealizados}</span>
-                        <span className="text-cyan-400">⏱ {m.eventosAgendados}</span>
-                        {m.eventosCancelados > 0 && <span className="text-rose-400">✕ {m.eventosCancelados}</span>}
-                      </div>
-                    </div>
+            {/* Colunas do Gráfico de Barras com Visual Moderno */}
+            <div className="pt-2">
+              <div className="h-36 flex items-end justify-between gap-2 px-1">
+                {monthlyStats.length === 0 ? (
+                  <div className="w-full text-center text-xs text-slate-400 py-10">
+                    Aguardando histórico mensal...
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                ) : (
+                  monthlyStats.map((m, idx) => {
+                    const heightPercent = Math.max(12, Math.round((m.faturamentoTotal / maxRevenue) * 100));
+                    const isLast = idx === monthlyStats.length - 1;
 
-          {/* Tabela Detalhada Mês a Mês */}
-          <div className="card-glass rounded-2xl p-6 overflow-x-auto">
-            <h3 className="text-sm font-bold text-white mb-4">Detalhamento Mensal de Operações</h3>
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-3">Mês / Ano</th>
-                  <th className="py-3 px-3 text-center">Total Eventos</th>
-                  <th className="py-3 px-3 text-center">Realizados</th>
-                  <th className="py-3 px-3 text-center">Agendados</th>
-                  <th className="py-3 px-3 text-center">Cancelados</th>
-                  <th className="py-3 px-3 text-right">Faturamento</th>
-                  <th className="py-3 px-3 text-right">Recebido</th>
-                  <th className="py-3 px-3 text-right">A Receber</th>
-                  <th className="py-3 px-3 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {filteredMonthlyStats.map((m) => (
-                  <tr key={m.mes} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-3 px-3 font-bold text-white">{m.mesFormatado}</td>
-                    <td className="py-3 px-3 text-center font-bold text-brand-400">{m.totalEventos}</td>
-                    <td className="py-3 px-3 text-center text-emerald-400 font-semibold">{m.eventosRealizados}</td>
-                    <td className="py-3 px-3 text-center text-cyan-400 font-semibold">{m.eventosAgendados}</td>
-                    <td className="py-3 px-3 text-center text-rose-400 font-semibold">{m.eventosCancelados}</td>
-                    <td className="py-3 px-3 text-right font-extrabold text-white">{formatCurrencyBRL(m.faturamentoTotal)}</td>
-                    <td className="py-3 px-3 text-right text-emerald-400 font-semibold">{formatCurrencyBRL(m.totalRecebido)}</td>
-                    <td className="py-3 px-3 text-right text-amber-400 font-semibold">{formatCurrencyBRL(m.totalPendente)}</td>
-                    <td className="py-3 px-3 text-center">
-                      {onNavigateToEvents && (
-                        <button
-                          onClick={onNavigateToEvents}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-brand-600 hover:text-white text-slate-300 text-[11px] font-medium transition-colors"
-                        >
-                          Ver Eventos →
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                    return (
+                      <div key={`${m.ano}-${m.mes}`} className="flex-1 flex flex-col items-center gap-1.5 group">
+                        {/* Tooltip on hover */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-primary-700 bg-purple-50 px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">
+                          {formatCurrencyBRL(m.faturamentoTotal)}
+                        </div>
 
-      {/* ================= ABA 3: FATURAMENTO POR MÊS ================= */}
-      {activeTab === 'faturamento_mes' && (
-        <div className="space-y-6">
-          {/* Cards de Métricas Financeiras Consolidadas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-5 rounded-2xl bg-dark-800/80 border border-slate-800">
-              <div className="text-xs text-slate-400 font-medium">Faturamento Total Contratado</div>
-              <div className="text-2xl font-black text-white mt-1">
-                {formatCurrencyBRL(filteredMonthlyStats.reduce((acc, m) => acc + m.faturamentoTotal, 0))}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">Soma de todos os contratos e apresentações</p>
-            </div>
+                        {/* Bar */}
+                        <div className="w-full max-w-[28px] bg-slate-100 rounded-xl h-28 flex items-end p-0.5">
+                          <div
+                            style={{ height: `${heightPercent}%` }}
+                            className={`w-full rounded-lg transition-all duration-500 ${
+                              isLast
+                                ? 'bg-gradient-to-t from-[#7052ff] to-[#9274fc] shadow-md shadow-primary-500/30'
+                                : 'bg-gradient-to-t from-sky-400 to-indigo-400'
+                            }`}
+                          />
+                        </div>
 
-            <div className="p-5 rounded-2xl bg-dark-800/80 border border-slate-800">
-              <div className="text-xs text-slate-400 font-medium">Total Já Recebido</div>
-              <div className="text-2xl font-black text-emerald-400 mt-1">
-                {formatCurrencyBRL(filteredMonthlyStats.reduce((acc, m) => acc + m.totalRecebido, 0))}
-              </div>
-              <p className="text-[11px] text-emerald-400/80 mt-1">Quitados via PIX ou Sinal</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-dark-800/80 border border-slate-800">
-              <div className="text-xs text-slate-400 font-medium">Total Pendente a Receber</div>
-              <div className="text-2xl font-black text-amber-400 mt-1">
-                {formatCurrencyBRL(filteredMonthlyStats.reduce((acc, m) => acc + m.totalPendente, 0))}
-              </div>
-              <p className="text-[11px] text-amber-400/80 mt-1">Saldos restantes e eventos futuros</p>
-            </div>
-          </div>
-
-          {/* Gráfico Comparativo de Faturamento Mês a Mês */}
-          <div className="card-glass rounded-2xl p-6">
-            <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" /> Fluxo de Faturamento Mensal (R$)
-            </h3>
-            <p className="text-xs text-slate-400 mb-6">Comparação do valor faturado, recebido e pendente por mês</p>
-
-            <div className="space-y-4">
-              {filteredMonthlyStats.map((m) => {
-                const percentFaturado = Math.round((m.faturamentoTotal / maxMonthlyRevenue) * 100);
-                const percentRecebido = m.faturamentoTotal > 0 ? Math.round((m.totalRecebido / m.faturamentoTotal) * 100) : 0;
-
-                return (
-                  <div key={m.mes} className="p-4 rounded-xl bg-dark-800/60 border border-slate-800/80 hover:border-slate-700 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-bold text-white font-mono min-w-[70px]">{m.mesFormatado}</span>
-                        <span className="text-[11px] text-slate-400">({m.totalEventos} eventos)</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs">
-                        <span className="text-slate-400">
-                          Total: <strong className="text-white">{formatCurrencyBRL(m.faturamentoTotal)}</strong>
+                        {/* Month Label */}
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                          {m.mesNome.substring(0, 3)}
                         </span>
-                        <span className="text-emerald-400 font-medium">
-                          Recebido: {formatCurrencyBRL(m.totalRecebido)}
-                        </span>
-                        {m.totalPendente > 0 && (
-                          <span className="text-amber-400 font-medium">
-                            Pendente: {formatCurrencyBRL(m.totalPendente)}
-                          </span>
-                        )}
                       </div>
-                    </div>
-
-                    {/* Barra de Progresso Financeira */}
-                    <div className="w-full bg-slate-900 rounded-full h-3 overflow-hidden flex border border-slate-800">
-                      <div
-                        style={{ width: `${(m.totalRecebido / (m.faturamentoTotal || 1)) * 100}%` }}
-                        className="bg-emerald-500 h-full transition-all"
-                        title={`Recebido: ${formatCurrencyBRL(m.totalRecebido)}`}
-                      />
-                      <div
-                        style={{ width: `${(m.totalPendente / (m.faturamentoTotal || 1)) * 100}%` }}
-                        className="bg-amber-500/80 h-full transition-all"
-                        title={`Pendente: ${formatCurrencyBRL(m.totalPendente)}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ================= ABA 4: RESUMO POR ANO ================= */}
-      {activeTab === 'resumo_anual' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {stats?.metricasPorAno.map((y) => (
-              <div
-                key={y.ano}
-                className="p-6 rounded-2xl bg-gradient-to-b from-dark-800/90 to-dark-900/90 border border-slate-800 hover:border-brand-500/40 shadow-xl transition-all"
+          {/* 3. Ações Rápidas & Atalhos */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-clean p-5 space-y-3">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ações Rápidas</h4>
+            
+            <div className="space-y-2">
+              <button
+                onClick={onNavigateToNew}
+                className="w-full p-3 rounded-2xl bg-gradient-to-r from-[#7052ff] to-[#8b5cf6] text-white font-bold text-xs shadow-primary-glow flex items-center justify-between transition-all hover:scale-[1.01] active:scale-[0.99]"
               >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-                  <div>
-                    <span className="text-xs uppercase tracking-wider font-bold text-brand-400">Exercício</span>
-                    <h3 className="text-3xl font-black text-white tracking-tight">{y.ano}</h3>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                    <BarChart3 className="w-6 h-6" />
-                  </div>
-                </div>
+                <span className="flex items-center gap-2">
+                  <Plus className="w-4 h-4" /> Criar Novo Contrato
+                </span>
+                <ChevronRight className="w-4 h-4 text-white/80" />
+              </button>
 
-                <div className="space-y-3.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Total de Eventos:</span>
-                    <span className="text-base font-extrabold text-white">{y.totalEventos}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Eventos Realizados:</span>
-                    <span className="font-bold text-emerald-400">{y.eventosRealizados}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Eventos Agendados / Futuros:</span>
-                    <span className="font-bold text-cyan-400">{y.eventosAgendados}</span>
-                  </div>
-                  <div className="h-px bg-slate-800 my-2" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Faturamento Anual:</span>
-                    <span className="text-sm font-black text-white">{formatCurrencyBRL(y.faturamentoTotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Total Já Recebido:</span>
-                    <span className="font-bold text-emerald-400">{formatCurrencyBRL(y.totalRecebido)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Total a Receber:</span>
-                    <span className="font-bold text-amber-400">{formatCurrencyBRL(y.totalPendente)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium">Ticket Médio por Evento:</span>
-                    <span className="font-bold text-purple-400">{formatCurrencyBRL(y.ticketMedio)}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              <button
+                onClick={handleGenerateAllContracts}
+                disabled={isGeneratingBatch}
+                className="w-full p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200/80 flex items-center justify-between transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary-600" />
+                  {isGeneratingBatch ? 'Gerando Contratos...' : 'Padronizar Contratos & PDFs'}
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Modal de Prévia de Contrato */}
+        </div>
+      </div>
+
+      {/* Modal de Prévia do Contrato */}
       {previewContractId && (
         <ContractPreviewModal
-          isOpen={true}
-          onClose={() => setPreviewContractId(null)}
           contractId={previewContractId}
           contractNumber={previewNumber}
-          onRegenerated={loadData}
+          onClose={() => setPreviewContractId(null)}
         />
       )}
     </div>

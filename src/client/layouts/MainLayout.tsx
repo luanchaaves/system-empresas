@@ -7,7 +7,7 @@ import {
   CalendarDays,
   FilePlus2,
   DollarSign,
-  Menu,
+  Store,
 } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -36,7 +36,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   }, [currentTab]);
 
   return (
-    <div className="flex h-screen w-full bg-dark-900 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-[#f2f5fb] text-slate-800 overflow-hidden font-sans">
       {/* Sidebar (Desktop Fixed + Mobile Off-Canvas Drawer) */}
       <Sidebar
         currentTab={currentTab}
@@ -56,17 +56,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 min-w-0 bg-gradient-to-b from-dark-900 via-dark-850 to-dark-900">
+        <main className="flex-1 min-w-0">
           {children}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Shown only on small screens) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-dark-850/95 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around px-2 z-40">
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 flex items-center justify-around px-2 z-40 shadow-clean-lg">
         <button
           onClick={() => onSelectTab('dashboard')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'dashboard' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+            currentTab === 'dashboard' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
@@ -76,40 +76,42 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         <button
           onClick={() => onSelectTab('eventos')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'eventos' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+            currentTab === 'eventos' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
           }`}
         >
           <CalendarDays className="w-5 h-5" />
           <span className="text-[10px] mt-1">Agenda</span>
         </button>
 
-        {/* Central Glowing Action Button */}
+        {/* Central Action Button */}
         <button
           onClick={() => onSelectTab('novo-contrato')}
           className="flex flex-col items-center justify-center -top-3 relative px-3 transition-transform active:scale-95"
         >
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-600 via-pink-600 to-purple-600 shadow-lg shadow-brand-600/40 flex items-center justify-center text-white border-2 border-dark-900">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-600 to-indigo-600 shadow-primary-glow flex items-center justify-center text-white border-2 border-white">
             <FilePlus2 className="w-6 h-6" />
           </div>
-          <span className="text-[10px] font-bold text-white mt-0.5">Contrato</span>
+          <span className="text-[10px] font-bold text-slate-800 mt-0.5">Contrato</span>
+        </button>
+
+        <button
+          onClick={() => onSelectTab('burger-king')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+            currentTab === 'burger-king' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
+          }`}
+        >
+          <Store className="w-5 h-5" />
+          <span className="text-[10px] mt-1">BK</span>
         </button>
 
         <button
           onClick={() => onSelectTab('financeiro')}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-            currentTab === 'financeiro' ? 'text-brand-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+            currentTab === 'financeiro' ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-700'
           }`}
         >
           <DollarSign className="w-5 h-5" />
           <span className="text-[10px] mt-1">Financeiro</span>
-        </button>
-
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] mt-1">Mais</span>
         </button>
       </nav>
     </div>

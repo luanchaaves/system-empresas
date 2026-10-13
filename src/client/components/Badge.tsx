@@ -2,33 +2,40 @@ import React from 'react';
 import { AttractionType, ContractStatus } from '../../types/index.js';
 
 interface StatusBadgeProps {
-  status: ContractStatus;
+  status: ContractStatus | 'AGENDADO' | 'CONFIRMADO' | 'EM_ANDAMENTO' | 'CONCLUIDO' | 'CANCELADO';
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   switch (status) {
     case 'GERADO':
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
-          Gerado
-        </span>
-      );
+    case 'CONFIRMADO':
+    case 'CONCLUIDO':
     case 'FINALIZADO':
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-          Finalizado
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+          {status === 'GERADO' ? 'Gerado' : status === 'CONFIRMADO' ? 'Confirmado' : 'Concluído'}
+        </span>
+      );
+    case 'EM_ANDAMENTO':
+      return (
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5 animate-pulse"></span>
+          Em Andamento
         </span>
       );
     case 'RASCUNHO':
+    case 'AGENDADO':
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          Rascunho
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+          {status === 'RASCUNHO' ? 'Rascunho' : 'Confirmado'}
         </span>
       );
     case 'CANCELADO':
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1.5"></span>
           Cancelado
         </span>
       );
@@ -46,8 +53,8 @@ interface AttractionBadgeProps {
 export const AttractionBadge: React.FC<AttractionBadgeProps> = ({ tipo, personagem, quantidade }) => {
   if (tipo === 'ROBO_LED') {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-brand-900/40 to-purple-900/40 text-brand-300 border border-brand-600/30">
-        <span className="w-2 h-2 rounded-sm bg-brand-500 shadow-sm shadow-brand-400"></span>
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+        <span className="w-2 h-2 rounded-sm bg-purple-600"></span>
         Robô LED
       </span>
     );
@@ -56,8 +63,8 @@ export const AttractionBadge: React.FC<AttractionBadgeProps> = ({ tipo, personag
   const label = personagem ? `${personagem}${quantidade && quantidade > 1 ? ` (${quantidade}x)` : ''}` : 'Personagens';
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-950/40 text-purple-300 border border-purple-500/30">
-      <span className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-300"></span>
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+      <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
       {label}
     </span>
   );

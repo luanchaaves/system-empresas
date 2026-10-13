@@ -6,8 +6,9 @@ interface StatsCardProps {
   value: string | number;
   subtitle?: string;
   icon: LucideIcon;
-  iconColor?: string;
-  accentGradient?: string;
+  variant?: 'yellow' | 'coral' | 'mint' | 'purple' | 'cyan' | 'default';
+  trend?: string;
+  trendPositive?: boolean;
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({
@@ -15,25 +16,67 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   value,
   subtitle,
   icon: Icon,
-  iconColor = 'text-brand-400',
-  accentGradient = 'from-brand-600/20 to-purple-600/10',
+  variant = 'purple',
+  trend,
+  trendPositive = true,
 }) => {
-  return (
-    <div className="relative overflow-hidden rounded-2xl p-5 card-glass card-glass-hover">
-      {/* Decorative background glow */}
-      <div
-        className={`absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-gradient-to-br ${accentGradient} blur-2xl pointer-events-none opacity-40`}
-      />
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'yellow':
+        return {
+          iconBg: 'bg-amber-50 text-amber-600 border border-amber-200/60',
+          hoverBorder: 'hover:border-amber-300',
+        };
+      case 'coral':
+        return {
+          iconBg: 'bg-rose-50 text-rose-600 border border-rose-200/60',
+          hoverBorder: 'hover:border-rose-300',
+        };
+      case 'mint':
+        return {
+          iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-200/60',
+          hoverBorder: 'hover:border-emerald-300',
+        };
+      case 'cyan':
+        return {
+          iconBg: 'bg-sky-50 text-sky-600 border border-sky-200/60',
+          hoverBorder: 'hover:border-sky-300',
+        };
+      case 'purple':
+      default:
+        return {
+          iconBg: 'bg-purple-50 text-purple-600 border border-purple-200/60',
+          hoverBorder: 'hover:border-purple-300',
+        };
+    }
+  };
 
-      <div className="flex items-start justify-between relative z-10">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">{title}</p>
-          <h3 className="text-2xl font-black text-white tracking-tight">{value}</h3>
-          {subtitle && <p className="text-xs text-slate-400 mt-1 font-medium">{subtitle}</p>}
+  const { iconBg, hoverBorder } = getVariantStyles();
+
+  return (
+    <div className={`p-5 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all duration-200 flex flex-col justify-between ${hoverBorder}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</span>
+        <div className={`p-2.5 rounded-xl ${iconBg} shrink-0`}>
+          <Icon className="w-4 h-4" />
         </div>
-        <div className={`p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 shadow-inner ${iconColor}`}>
-          <Icon className="w-5 h-5" />
-        </div>
+      </div>
+
+      <div className="mt-3">
+        <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+          {value}
+        </h3>
+        
+        {(subtitle || trend) && (
+          <div className="flex items-center gap-2 mt-2 text-xs">
+            {trend && (
+              <span className={`font-bold px-1.5 py-0.5 rounded-md ${trendPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                {trend}
+              </span>
+            )}
+            {subtitle && <span className="text-slate-400 font-medium">{subtitle}</span>}
+          </div>
+        )}
       </div>
     </div>
   );
