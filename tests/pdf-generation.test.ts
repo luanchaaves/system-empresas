@@ -7,10 +7,10 @@ describe('PDF Generation Engine (Puppeteer)', () => {
   const testCompany: CompanyConfig = {
     id: 1,
     company_name: 'Robo Led Partner',
-    responsavel: 'Carlos Henrique Silva',
-    documento: '12.345.678/0001-90',
-    endereco: 'Av. Paulista, 1500 - Bela Vista',
-    cidade: 'São Paulo',
+    responsavel: 'Luan Chaves Bispo',
+    documento: '66.560.196/0001-87',
+    endereco: 'Rua Senador Mario mota n230 - Sao Bernardo do campo',
+    cidade: 'São Bernardo do Campo',
     estado: 'SP',
   };
 

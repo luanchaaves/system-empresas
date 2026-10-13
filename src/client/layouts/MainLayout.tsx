@@ -36,7 +36,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   }, [currentTab]);
 
   return (
-    <div className="flex h-screen w-full bg-[#f2f5fb] text-slate-800 overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-[#f2f5fb] dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 overflow-hidden font-sans transition-colors duration-200">
       {/* Sidebar (Desktop Fixed + Mobile Off-Canvas Drawer) */}
       <Sidebar
         currentTab={currentTab}

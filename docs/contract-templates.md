@@ -75,9 +75,9 @@ De acordo com as diretrizes do projeto:
 | `cliente.cpf` | CPF formatado com máscara | `123.456.789-09` |
 | `cliente.endereco` | Endereço do contratante | `Av. Paulista, 1000 - São Paulo - SP` |
 | `empresa.nome` | Razão Social / Nome Fantasia | `Robo Led Partner` |
-| `empresa.responsavel` | Representante Legal | `Carlos Henrique Silva` |
-| `empresa.documento` | CNPJ da Prestadora | `12.345.678/0001-90` |
-| `empresa.endereco` | Sede da Prestadora | `Av. Paulista, 1500 - Bela Vista` |
+| `empresa.responsavel` | Representante Legal | `Luan Chaves Bispo` |
+| `empresa.documento` | CNPJ da Prestadora | `66.560.196/0001-87` |
+| `empresa.endereco` | Sede da Prestadora | `Rua Senador Mario mota n230 - Sao Bernardo do campo` |
 | `evento.data_formatada` | Data descritiva | `15 de setembro de 2026` |
 | `evento.horario` | Horário de início | `20:00` |
 | `evento.endereco` | Endereço da apresentação | `Espaço XYZ, Rua das Flores 500` |

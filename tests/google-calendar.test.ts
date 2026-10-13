@@ -4,8 +4,8 @@ import { EventService } from '../src/server/services/event.service.js';
 import { CompanyRepository } from '../src/server/db/database.js';
 import { EventDetails } from '../src/types/index.js';
 
-describe('Google Calendar Integration (eventos.agenda.demo@gmail.com)', () => {
-  it('deve gerar a URL direta de 1-clique para adicionar ao Google Agenda com email eventos.agenda.demo@gmail.com', () => {
+describe('Google Calendar Integration (roboledpartner@gmail.com)', () => {
+  it('deve gerar a URL direta de 1-clique para adicionar ao Google Agenda com email roboledpartner@gmail.com', () => {
     const mockEvent: EventDetails = {
       id: 999,
       cliente_id: 1,
@@ -16,7 +16,7 @@ describe('Google Calendar Integration (eventos.agenda.demo@gmail.com)', () => {
       duracao: 2,
       horario_termino: '23:00',
       endereco: 'Espaço Jardim Encantado - Av. Kennedy, 500',
-      cidade: 'São Paulo',
+      cidade: 'São Bernardo do Campo',
       estado: 'SP',
       status: 'CONFIRMADO',
       valor_total: 1500,
@@ -56,7 +56,7 @@ describe('Google Calendar Integration (eventos.agenda.demo@gmail.com)', () => {
     const url = GoogleCalendarService.generateDirectWebUrl(mockEvent);
 
     expect(url).toContain('https://calendar.google.com/calendar/render?action=TEMPLATE');
-    expect(url).toContain('eventos.agenda.demo@gmail.com');
+    expect(url).toContain('roboledpartner@gmail.com');
     expect(url).toContain('Rob%C3%B4%20LED%20Partner');
     expect(url).toContain('20261220T210000');
     expect(url).toContain('20261220T230000');

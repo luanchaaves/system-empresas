@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage.js';
 import { MainLayout } from './layouts/MainLayout.js';
 import { NavTab } from './components/Sidebar.js';
 import { DashboardPage } from './pages/DashboardPage.js';
+import { AgendaPage } from './pages/AgendaPage.js';
 import { EventosPage } from './pages/EventosPage.js';
 import { BurgerKingPage } from './pages/BurgerKingPage.js';
 import { NovoContratoPage } from './pages/NovoContratoPage.js';
@@ -116,8 +117,14 @@ const AppContent: React.FC = () => {
         <DashboardPage
           onNavigateToNew={() => setCurrentTab('novo-contrato')}
           onNavigateToContracts={() => setCurrentTab('contratos')}
-          onNavigateToEvents={() => setCurrentTab('eventos')}
+          onNavigateToEvents={() => setCurrentTab('agenda')}
           onNavigateToFinancial={() => setCurrentTab('financeiro')}
+        />
+      )}
+
+      {currentTab === 'agenda' && (
+        <AgendaPage
+          onNavigateToNewContract={() => setCurrentTab('novo-contrato')}
         />
       )}
 

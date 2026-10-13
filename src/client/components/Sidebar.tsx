@@ -22,6 +22,7 @@ import { useTheme } from '../context/ThemeContext.js';
 
 export type NavTab =
   | 'dashboard'
+  | 'agenda'
   | 'eventos'
   | 'burger-king'
   | 'novo-contrato'
@@ -58,11 +59,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       description: 'Visão geral & métricas',
     },
     {
+      id: 'agenda' as NavTab,
+      label: 'Agenda de Shows',
+      icon: CalendarDays,
+      description: 'Google Agenda & Calendário',
+      badge: 'Google',
+      highlight: true,
+    },
+    {
       id: 'eventos' as NavTab,
       label: 'Eventos & Festas',
       icon: CalendarDays,
-      description: 'Casamentos, 15 anos & agenda',
-      highlight: true,
+      description: 'Casamentos, 15 anos & lista',
     },
     {
       id: 'burger-king' as NavTab,

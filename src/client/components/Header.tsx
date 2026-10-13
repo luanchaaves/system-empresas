@@ -25,6 +25,11 @@ export const Header: React.FC<HeaderProps> = ({
       title: 'Dashboard de Operações',
       subtitle: 'Acompanhe eventos, faturamento contratado, fluxo de caixa e agenda em tempo real.',
     },
+    agenda: {
+      title: 'Agenda de Shows & Google Calendar',
+      subtitle: 'Calendário integrado, sincronização Google Agenda (roboledpartner@gmail.com) e escala de apresentações.',
+      searchPlaceholder: 'Buscar show, cliente ou local...',
+    },
     eventos: {
       title: 'Agenda & Gestão de Eventos',
       subtitle: 'Visualize cronograma, status do show, atrações escaladas e gere contratos com 1 clique.',

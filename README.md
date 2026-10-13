@@ -1,120 +1,82 @@
-# 🚀 EventMaster ERP — Sistema Completo de Gestão de Eventos, Contratos & Finanças
+# 🤖 Sistema de Geração Automática de Contratos — Robo Led Partner
 
-![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript)
-![Node.js](https://img.shields.io/badge/Node.js-22%2B-green?logo=node.js)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8?logo=tailwindcss)
-![SQLite](https://img.shields.io/badge/SQLite-node:sqlite-003B57?logo=sqlite)
-![Puppeteer](https://img.shields.io/badge/Puppeteer-PDF%20Engine-brightgreen?logo=puppeteer)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
-![License](https://img.shields.io/badge/License-MIT-purple)
-
-Sistema ERP e financeiro corporativo full-stack projetado para empresas de entretenimento, shows, eventos sociais/corporativos, robôs de LED e atrações artísticas. O sistema unifica o ciclo de vida completo da operação: **Agendamento de Eventos**, **Geração Automática de Contratos em PDF**, **Sincronização com Google Calendar**, **Fluxo de Caixa 40%/60%**, **Acompanhamento de Custos Operacionais Diretos** e **DRE Gerencial com Lucro Líquido Real**.
+Sistema profissional, completo e local-first desenvolvido para a empresa **Robo Led Partner**, especializado na criação, gerenciamento, pré-visualização e geração automática de contratos de prestação de serviços com exportação em PDF de alta resolução e armazenamento em banco de dados SQLite local.
 
 ---
 
-## 🌟 Módulos e Funcionalidades
+## 🌟 Principais Funcionalidades
 
-### 1. 📊 Dashboard Executivo & Analytics
-- **KPIs em Tempo Real**: Faturamento total, eventos realizados e confirmados, total de contratos emitidos e taxa de conversão.
-- **Gráficos e Estatísticas**: Distribuição por tipo de atração, faturamento mensal, comparativo ano a ano e linha do tempo de eventos.
-- **Filtros Temporais**: Análise por mês, ano e período customizado.
-
-### 2. 📅 Gestão de Eventos & Google Calendar
-- Agendamento completo com cliente, local, data, horários com cálculo de término automático e atrações contratadas.
-- **Integração Google Calendar**: Criação de eventos na agenda, geração de links diretos de navegação no mapa e sincronização bidirecional.
-- Status do evento: *Confirmado*, *Realizado*, *Pendente* ou *Cancelado*.
-
-### 3. 📄 Emissão Automática de Contratos (PDF Engine)
-- Geração de contratos formatados em **A4 profissional** com Puppeteer Headless.
-- Modelos customizados com cláusulas jurídicas para:
-  - **Robô de LED / Shows Tecnológicos**
-  - **Personagens Vivos & Artistas**
-- Cálculo automático das cláusulas financeiras (Entrada 40% + Restante 60% com divisão exata de centavos).
-- Validação estrita de CPF com algoritmo oficial da Receita Federal.
-- Armazenamento estruturado e download instantâneo do PDF.
-
-### 4. 💰 Controle Financeiro & Fluxo de Caixa
-- Geração automática de parcelas de Sinal (40%) e Saldo (60%) no ato do agendamento.
-- Registro de baixas com forma de pagamento (PIX, Cartão, Dinheiro, Boleto, Transferência) e código de comprovante.
-- Filtros por status de recebimento (*Pago*, *Pendente*, *Atrasado*).
-
-### 5. 💸 Custos Operacionais por Evento
-- Rastreamento dos custos variáveis diretos por evento:
-  - **Cilindros de CO2**
-  - **Gerbs / Fogos Indoor (Faísca Fria)**
-  - **Combustível / Deslocamento**
-  - **Pedágios**
-  - **Vallet / Estacionamento**
-  - **Ajudantes / Roadies** (com controle de status Pago/Pendente)
-  - **Monitores de Personagem** (com controle de status Pago/Pendente)
-- Cálculo automático de **Margem de Lucro por Evento (%)** e **Lucro Líquido Operacional**.
-
-### 6. 📈 Compras, Investimentos & DRE Consolidado
-- Registro e categorização de despesas:
-  - **Investimentos** (Aquisição de robôs, estruturas, personagens)
-  - **Melhorias** (Baterias, conectores, pistolas de efeitos, cases)
-  - **Manutenção** (Pintura, solda, substituição de LEDs, trajes)
-  - **Marketing** (Tráfego pago, panfletos, branding)
-  - **Imprevistos**
-- **DRE Operacional em Cascata**:
-  - `(+) Receita Operacional Bruta`
-  - `(-) Custos Variáveis Operacionais`
-  - `(=) Lucro Bruto Operacional`
-  - `(-) Despesas Estruturais e Marketing`
-  - `(=) Lucro Operacional (EBITDA)`
-  - `(-) Investimentos em Patrimônio`
-  - `(=) Lucro Líquido Real`
-
-### 7. 🎭 Catálogo de Atrações & Personagens
-- Gestão visual de robôs de LED, personagens e serviços adicionais.
-- Galeria de fotos, valores base, tempo de apresentação e personalizações.
+- **🎭 Suporte aos Dois Modelos Oficiais de Contrato**:
+  - **Robô LED**: Performance com lasers, efeitos visuais, operador/artista e interação com os convidados.
+  - **Personagens Vivos**: Animação com cosplay/artísticos (ex: *Homem-Aranha*, *Mickey*, *La Casa de Papel*...), quantidade de personagens e parágrafo único de interpretação artística.
+- **⚡ Live Preview em Tempo Real**: Pré-visualização instantânea do contrato em formato A4 diretamente na tela antes de salvar.
+- **📄 Geração Profissional de PDF com Puppeteer**: Documentos gerados com resolução impecável, cabeçalho degradê magenta/neon da marca, diagramação idêntica ao modelo físico e armazenamento estruturado por ano/mês (`data/contracts/YYYY/MM/`).
+- **💰 Cálculo Financeiro Automático (40% / 60%)**:
+  - 40% na assinatura do contrato como sinal.
+  - 60% no dia do evento.
+  - Cálculo executado em centavos inteiros com garantia de soma exata $V_{entrada} + V_{restante} = V_{total}$.
+- **🛡️ Validação Estrita de CPF**: Algoritmo oficial dos dois dígitos verificadores da Receita Federal com máscara de digitação e autocomplete de clientes cadastrados.
+- **⏰ Cálculo Automático de Término de Evento**: Cálculo dinâmico do horário final baseado na hora de início e duração (ex: 20:00 + 2h = 22:00).
+- **📋 Gestão e Histórico Completo de Contratos**:
+  - Busca em tempo real por nome do cliente, CPF ou número do contrato.
+  - Filtros por tipo de atração e status (Gerado, Finalizado, Rascunho, Cancelado).
+  - Ações rápidas: **Visualizar Prévia**, **Baixar PDF**, **Gerar Novamente**, **Duplicar Contrato** (gera novo número sequencial mantendo dados cadastrais), **Editar** e **Excluir**.
+- **⚙️ Configurações da Empresa**: Gestão dinâmica dos dados fixos da contratada (Razão Social, Responsável, CNPJ, Endereço e Comarca de Foro).
+- **📊 Dashboard de Operações**: Métricas de faturamento contratado, total de contratos, contadores de Robô LED vs Personagens e cronograma de próximos eventos.
 
 ---
 
-## 🛠️ Arquitetura Tecnológica
+## 🏗️ Arquitetura Tecnológica
 
-| Camada | Tecnologia | Destaques |
+| Camada | Tecnologia | Descrição |
 | :--- | :--- | :--- |
-| **Frontend** | React 19 + TypeScript | Interface Dark Glass Neon, responsiva (Desktop & Mobile) |
-| **Estilização** | TailwindCSS 3 + Lucide Icons | Componentes modulares, animações fluidas e micro-interações |
-| **Backend** | Node.js 22+ & Express | Arquitetura limpa (Controllers, Services, Repositories) |
-| **Banco de Dados** | SQLite Nativo (`node:sqlite`) | Rápido, ACID compliant, sem overhead de configuração |
-| **Geração de PDF** | Puppeteer Headless | Renderização vetorial e diagramação milimétrica A4 |
-| **Testes** | Vitest | Testes unitários para cálculos financeiros, CPF e templates |
-| **DevOps** | Docker + Docker Compose | Deploy em container pronto para produção |
+| **Frontend** | React 19 + TypeScript | Interface moderna, responsiva, com tema escuro e detalhes neon da marca. |
+| **Estilização** | TailwindCSS 3 + Lucide Icons | Design system elegante com feedback visual e micro-interações. |
+| **Backend** | Node.js + Express + TypeScript | API REST estruturada em controllers, services e repositories. |
+| **Banco de Dados** | SQLite Nativo (`node:sqlite`) | Armazenamento local rápido, sem necessidade de servidores externos. |
+| **Motor de PDF** | Puppeteer Headless (Chrome) | Renderização precisa em A4 com logotipo embutido em Base64. |
+| **Testes** | Vitest | Suíte de testes automatizados para regras matemáticas, CPF, templates e PDF. |
 
 ---
 
-## 🚀 Como Executar Localmente
+## 🚀 Como Executar o Projeto
 
 ### 1. Pré-requisitos
-- **Node.js**: Versão 22 ou superior
-- **NPM**: Versão 10 ou superior
+- **Node.js**: Versão 22 ou superior (recomendado Node.js v24).
+- **NPM**: Versão 10 ou superior.
 
-### 2. Instalação
+### 2. Instalação das Dependências
 ```bash
-git clone https://github.com/luanchaaves/system-empresas.git
-cd system-empresas
 npm install
 ```
 
-### 3. Execução em Desenvolvimento
+### 3. Popular Banco de Dados com Dados de Demonstração (Opcional)
+```bash
+npm run seed
+```
+
+### 4. Iniciar em Modo de Desenvolvimento
+Para rodar o Frontend e o Backend simultaneamente:
 ```bash
 npm run dev
 ```
-- Frontend: [http://localhost:5173](http://localhost:5173)
-- Backend: [http://localhost:3001](http://localhost:3001)
+- **Frontend (Vite)**: [http://localhost:5173](http://localhost:5173)
+- **Backend API (Express)**: [http://localhost:3001](http://localhost:3001)
 
-### 4. Execução via Docker
+### 5. Compilar para Produção
 ```bash
-docker compose up -d --build
+npm run build
+npm start
 ```
-Acesse em: [http://localhost:3001](http://localhost:3001)
 
-### 5. Executar Suíte de Testes
+### 6. Executar Testes Automatizados
 ```bash
 npm test
+```
+
+### 7. Executar Testes de Aceitação Ponta a Ponta
+```bash
+npx tsx scripts/acceptance-test.ts
 ```
 
 ---
@@ -122,32 +84,72 @@ npm test
 ## 📂 Estrutura de Diretórios
 
 ```
-system-empresas/
+sistema-contrato/
 ├── data/
 │   ├── contracts/               # PDFs gerados salvos por YYYY/MM/
 │   └── database.sqlite          # Banco de dados relacional SQLite
-├── docs/                        # Documentação técnica e regras de negócio
-├── public/                      # Assets estáticos, logos e fotos das atrações
+├── docs/                        # Documentação técnica aprofundada
+│   ├── architecture.md          # Arquitetura detalhada do sistema
+│   ├── business-rules.md        # Regras de negócio e cálculos
+│   ├── contract-templates.md    # Referência jurídica dos modelos
+│   └── pdf-generation.md        # Pipeline de renderização do Puppeteer
+├── public/
+│   └── logo.png                 # Logotipo oficial da Robo Led Partner
+├── scripts/
+│   └── acceptance-test.ts       # Script de testes ponta a ponta
 ├── src/
-│   ├── client/                  # SPA React 19 (Dashboard, Eventos, Contratos, Custos, DRE)
-│   ├── domain/                  # Lógica de negócio pura (Cálculos 40/60, CPF, Horários)
-│   ├── pdf/                     # Motor de renderização Puppeteer A4
-│   ├── server/                  # API REST Express e Repositórios SQLite
-│   ├── templates/               # Templates HTML/CSS e Estilos para Impressão
-│   └── types/                   # Tipagens TypeScript globais
-└── tests/                       # Suíte de testes automatizados com Vitest
+│   ├── client/                  # Frontend SPA React
+│   │   ├── api/                 # Cliente HTTP tipado
+│   │   ├── components/          # Componentes de UI reutilizáveis
+│   │   ├── context/             # ToastContext e notificações
+│   │   ├── layouts/             # Layout principal e Sidebar
+│   │   ├── pages/               # Dashboard, NovoContrato, Contratos, Configurações
+│   │   └── styles/              # CSS global e Tailwind
+│   ├── domain/                  # Lógica de domínio pura (sem frameworks)
+│   │   ├── calculations.ts      # Cálculos 40/60, horários e BRL
+│   │   ├── cpf.ts               # Validador oficial e formatador de CPF
+│   │   ├── date.ts              # Manipulação de datas em português
+│   │   ├── number-generator.ts  # Gerador sequencial RLP-YYYY-NNNNNN
+│   │   └── sanitizer.ts         # Sanitização de nomes de arquivos
+│   ├── pdf/
+│   │   └── generator.ts         # Motor de renderização Puppeteer
+│   ├── server/                  # Backend Express
+│   │   ├── controllers/         # Controladores da API REST
+│   │   ├── db/                  # Inicialização do SQLite e Repositórios
+│   │   ├── routes/              # Roteamento da API
+│   │   └── services/            # Serviços de orquestração de contratos
+│   ├── templates/               # Templates HTML/CSS dos contratos
+│   │   ├── common/              # Estilos A4 e conversão de Logo Base64
+│   │   ├── robo-led/            # Template oficial do Robô LED
+│   │   └── personagens/         # Template oficial de Personagens Vivos
+│   └── types/                   # Interfaces e tipos TypeScript globais
+└── tests/                       # Suíte de testes com Vitest
+    ├── calculations.test.ts
+    ├── cpf.test.ts
+    ├── dates-duration.test.ts
+    ├── pdf-generation.test.ts
+    └── templates.test.ts
 ```
 
 ---
 
-## 🔒 Segurança e Privacidade
-- Sistema 100% **local-first**: Nenhum dado de clientes, contratos ou financeiro é compartilhado com serviços em nuvem externos sem consentimento.
-- Banco de dados SQLite local em arquivo único (`data/database.sqlite`).
-- Geração de PDF offline utilizando assets embutidos em Base64.
-- Ambiente com separação de configurações e suporte a Docker.
+## 📋 Regras Comerciais & Padrões
+
+1. **Formato do Número de Contrato**: `RLP-YYYY-NNNNNN` (ex: `RLP-2026-000001`).
+2. **Condição Comercial Padrão**: 40% na assinatura e 60% no dia do evento.
+3. **Multa por Atraso no Pagamento**: 2% + juros de 1% ao mês.
+4. **Cancelamento (< 7 dias)**: Multa de 40% do valor total contratado.
+5. **Tolerância de Atraso no Evento**: 30 minutos.
+6. **Dados Oficiais da Empresa (Padrão)**:
+   - **Empresa**: Robo Led Partner
+   - **Responsável**: Luan Chaves Bispo
+   - **CNPJ**: 66.560.196/0001-87
+   - **Endereço**: Rua Senador Mario mota n230 - Sao Bernardo do campo
+   - **Cidade**: São Bernardo do Campo / SP
 
 ---
 
-## 📄 Licença
-
-Distribuído sob a licença MIT.
+## 🔒 Segurança e Privacidade
+- Sistema 100% **local-first**: Nenhum dado de clientes, contratos ou financeiro é compartilhado com serviços em nuvem externos.
+- Banco de dados SQLite local em arquivo único (`data/database.sqlite`).
+- Geração de PDF offline utilizando assets embutidos em Base64.

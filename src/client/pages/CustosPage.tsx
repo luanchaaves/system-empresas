@@ -274,11 +274,11 @@ export const CustosPage: React.FC = () => {
       {/* Header com Título e Ação */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <DollarSign className="w-8 h-8 text-emerald-400" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+            <DollarSign className="w-8 h-8 text-emerald-500" />
             Custos, Despesas & DRE
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 font-medium">
             Controle de custos diretos por evento (#01 a #{eventCosts.length || 47}), compras, investimentos e cálculo do Lucro Líquido Real.
           </p>
         </div>
@@ -296,7 +296,7 @@ export const CustosPage: React.FC = () => {
 
       {/* Alerta de Erro */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3 text-sm">
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center gap-3 text-sm">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -306,79 +306,76 @@ export const CustosPage: React.FC = () => {
       {costsSummary && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Faturamento Bruto */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all" />
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-clean relative overflow-hidden group hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">
               <span>FATURAMENTO BRUTO (EVENTOS)</span>
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {formatCurrencyBRL(costsSummary.faturamentoTotalEventos)}
             </div>
-            <div className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-              <span className="text-blue-400 font-semibold">{eventCosts.length}</span> eventos computados
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1.5">
+              <span className="text-blue-600 dark:text-blue-400 font-bold">{eventCosts.length}</span> eventos computados
             </div>
           </div>
 
           {/* Card 2: Custos Diretos de Eventos */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all" />
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-clean relative overflow-hidden group hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">
               <span>CUSTOS DIRETOS (EVENTOS)</span>
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
                 <Fuel className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-amber-400 tracking-tight">
+            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 tracking-tight">
               - {formatCurrencyBRL(costsSummary.totalCustosEventos)}
             </div>
-            <div className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1.5">
               <span>Gasolina, Ajudantes, Pedágio, etc.</span>
             </div>
           </div>
 
           {/* Card 3: Despesas Gerais & Investimentos */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-all" />
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-clean relative overflow-hidden group hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+            <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-bold mb-2">
               <span>COMPRAS & INVESTIMENTOS</span>
-              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+              <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400">
                 <ShoppingBag className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-purple-400 tracking-tight">
+            <div className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
               - {formatCurrencyBRL(costsSummary.totalDespesasGerais)}
             </div>
-            <div className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1.5">
               <span>Robô, Mascotes, Marketing e Baterias</span>
             </div>
           </div>
 
           {/* Card 4: Lucro Líquido Real */}
-          <div className={`border rounded-2xl p-4 sm:p-5 backdrop-blur-md relative overflow-hidden group transition-all ${
+          <div className={`border rounded-2xl p-4 sm:p-5 shadow-clean relative overflow-hidden group transition-all ${
             costsSummary.lucroLiquidoReal >= 0 
-              ? 'bg-emerald-950/20 border-emerald-500/30' 
-              : 'bg-rose-950/20 border-rose-500/30'
+              ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/30' 
+              : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/30'
           }`}>
-            <div className="flex items-center justify-between text-slate-300 text-xs font-medium mb-2">
+            <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 text-xs font-bold mb-2">
               <span>LUCRO LÍQUIDO REAL (DRE)</span>
               <div className={`p-2 rounded-xl ${
-                costsSummary.lucroLiquidoReal >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                costsSummary.lucroLiquidoReal >= 0 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
               }`}>
                 <Sparkles className="w-4 h-4" />
               </div>
             </div>
             <div className={`text-xl sm:text-2xl font-black tracking-tight ${
-              costsSummary.lucroLiquidoReal >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              costsSummary.lucroLiquidoReal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}>
               {formatCurrencyBRL(costsSummary.lucroLiquidoReal)}
             </div>
-            <div className="text-xs text-slate-400 mt-2 flex items-center justify-between">
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
               <span>Margem Líquida Real:</span>
               <span className={`font-bold ${
-                costsSummary.margemGeralPercentual >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                costsSummary.margemGeralPercentual >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}>
                 {costsSummary.margemGeralPercentual.toFixed(1)}%
               </span>
@@ -388,25 +385,25 @@ export const CustosPage: React.FC = () => {
       )}
 
       {/* Navegação por Abas */}
-      <div className="flex border-b border-slate-800 space-x-1 sm:space-x-3 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-1 sm:space-x-3 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('DASHBOARDS')}
-          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'DASHBOARDS'
-              ? 'border-brand-500 text-brand-400 font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              ? 'border-primary-600 dark:border-primary-400 text-primary-600 dark:text-primary-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          <BarChart3 className="w-4 h-4 text-brand-400" />
+          <BarChart3 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
           📊 Dashboards & Gráficos
         </button>
 
         <button
           onClick={() => setActiveTab('EVENTOS')}
-          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'EVENTOS'
-              ? 'border-cyan-400 text-cyan-400 font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <Fuel className="w-4 h-4" />
@@ -415,10 +412,10 @@ export const CustosPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('COMPRAS')}
-          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'COMPRAS'
-              ? 'border-purple-400 text-purple-400 font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <ShoppingBag className="w-4 h-4" />
@@ -427,10 +424,10 @@ export const CustosPage: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('DRE')}
-          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 font-bold text-sm transition-all whitespace-nowrap ${
             activeTab === 'DRE'
-              ? 'border-emerald-400 text-emerald-400 font-bold'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
           <PieChart className="w-4 h-4" />
@@ -442,12 +439,12 @@ export const CustosPage: React.FC = () => {
       {activeTab === 'DASHBOARDS' && costsSummary && (
         <div className="space-y-6 animate-fadeIn">
           {/* Card Principal: Distribuição do Faturamento Bruto */}
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-            <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-400" />
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-clean">
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
               Distribuição do Faturamento Total ({formatCurrencyBRL(costsSummary.faturamentoTotalEventos)})
             </h3>
-            <p className="text-xs text-slate-400 mb-6">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 font-medium">
               Visualização proporcional de onde foram aplicadas as receitas geradas pelos eventos.
             </p>
 
