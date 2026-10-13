@@ -23,18 +23,17 @@ const AppContent: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedClientForEvent, setSelectedClientForEvent] = useState<Client | undefined>(undefined);
 
-  // Tela de Carregamento Inicial com Efeito Neon
+  // Tela de Carregamento Inicial Clean
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#07090e] text-slate-100 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-brand-600/15 blur-[100px] pointer-events-none animate-pulse" />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-dark-900 border border-brand-500/40 flex items-center justify-center shadow-xl shadow-brand-500/25 animate-bounce">
-            <Sparkles className="w-8 h-8 text-brand-400 animate-spin" />
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f2f5fb] text-slate-800 relative overflow-hidden">
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-clean-md animate-bounce">
+            <Sparkles className="w-7 h-7 text-primary-600 animate-spin" />
           </div>
           <div className="text-center">
-            <h2 className="text-lg font-black tracking-tight text-white">Robo Led Partner</h2>
-            <p className="text-xs text-slate-400 mt-1">Carregando painel seguro...</p>
+            <h2 className="text-base font-black tracking-tight text-slate-900">Robô LED Partner</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Carregando painel...</p>
           </div>
         </div>
       </div>

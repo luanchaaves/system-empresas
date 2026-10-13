@@ -416,15 +416,15 @@ export const FinanceiroPage: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Banner Overview */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-dark-800 via-dark-800 to-emerald-950/30 border border-slate-800 shadow-xl">
+      <div className="rounded-3xl p-6 sm:p-8 border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-clean-md">
         <div>
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+          <div className="flex items-center gap-2 text-emerald-100 font-bold text-xs tracking-wider uppercase">
             <DollarSign className="w-4 h-4" /> Gestão de Fluxo de Caixa & Contas
           </div>
           <h2 className="text-2xl font-black text-white mt-1 tracking-tight">
             Financeiro & Contas a Receber
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-emerald-100 mt-0.5">
             Dashboards analíticos, inteligência de fluxo de caixa, recebimentos e controle de parcelas.
           </p>
         </div>
@@ -432,22 +432,22 @@ export const FinanceiroPage: React.FC = () => {
           <button
             onClick={handleDeduplicate}
             disabled={isCleaningDuplicates}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-slate-900 border border-emerald-100 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
             title="Remove duplicidades geradas ao criar eventos e contratos"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isCleaningDuplicates ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isCleaningDuplicates ? 'animate-spin' : ''}`} />
             {isCleaningDuplicates ? 'Limpando...' : 'Limpar Duplicados'}
           </button>
         </div>
       </div>
 
       {/* Seletor de Sub-Abas do Módulo Financeiro */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab('DASHBOARDS')}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
             activeTab === 'DASHBOARDS'
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >

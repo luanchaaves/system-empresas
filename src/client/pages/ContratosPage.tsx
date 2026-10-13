@@ -253,36 +253,36 @@ export const ContratosPage: React.FC<ContratosPageProps> = ({
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-dark-800 via-dark-800 to-brand-950/30 border border-slate-800 shadow-xl">
+      <div className="rounded-3xl p-6 sm:p-8 border border-purple-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-700 text-white shadow-primary-glow">
         <div>
-          <div className="flex items-center gap-2 text-brand-400 font-semibold text-xs tracking-wider uppercase">
+          <div className="flex items-center gap-2 text-purple-200 font-bold text-xs tracking-wider uppercase">
             <FileText className="w-4 h-4" /> Gestão Jurídica & Contratual
           </div>
           <h2 className="text-2xl font-black text-white mt-1 tracking-tight">
             Histórico & Inteligência de Contratos
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-purple-100 mt-0.5">
             Dashboards analíticos, indicadores de ticket médio, geração de PDFs e emissão de contratos.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             onClick={onNavigateToNew}
-            className="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all"
+            className="px-5 py-2.5 rounded-xl bg-white hover:bg-purple-50 text-slate-900 font-bold text-xs tracking-wide shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-4 h-4 text-primary-600" />
             Novo Contrato
           </button>
         </div>
       </div>
 
       {/* Seletor de Sub-Abas do Módulo de Contratos */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab('DASHBOARDS')}
           className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 ${
             activeTab === 'DASHBOARDS'
-              ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40 shadow-lg shadow-brand-500/10'
+              ? 'bg-primary-50 text-primary-700 border border-primary-200 shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >

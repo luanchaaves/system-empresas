@@ -109,26 +109,26 @@ export const AtracoesPage: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {/* Top Banner Hero */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-dark-800 via-dark-800 to-purple-950/30 border border-slate-800 shadow-xl">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-dark-900 border border-brand-500/40 shadow-lg shadow-brand-500/20 overflow-hidden shrink-0 flex items-center justify-center">
+      <div className="rounded-3xl p-6 sm:p-8 border border-purple-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-primary-600 via-primary-700 to-indigo-700 text-white shadow-primary-glow">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-white/20 p-1.5 backdrop-blur-md border border-white/30 shadow-lg shrink-0 flex items-center justify-center">
             <img
               src="/assets/branding/robo-avatar.png"
               alt="Robô LED"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-xl"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
           </div>
           <div>
-            <div className="flex items-center gap-2 text-brand-400 font-semibold text-xs tracking-wider uppercase">
+            <div className="flex items-center gap-2 text-purple-200 font-bold text-xs tracking-wider uppercase">
               <Sparkles className="w-4 h-4" /> Portfólio & Elenco
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white mt-0.5 tracking-tight">
               Catálogo de Robôs & Personagens
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-purple-100 mt-0.5">
               Gestão visual de robôs de LED, personagens vivos, figurinos e cachês.
             </p>
           </div>
@@ -136,10 +136,10 @@ export const AtracoesPage: React.FC = () => {
 
         <button
           onClick={handleOpenCreate}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 via-pink-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-purple-50 text-slate-900 font-bold text-xs tracking-wide shadow-md transition-all hover:scale-105 active:scale-95"
         >
-          <Plus className="w-4 h-4" />
-          Cadastrar Nova Atração
+          <Plus className="w-4 h-4 text-primary-600" />
+          Adicionar Nova Atração
         </button>
       </div>
 

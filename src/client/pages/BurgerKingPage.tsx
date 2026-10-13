@@ -497,19 +497,19 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
       )}
 
       {/* Top Banner Burger King B2B */}
-      <div className="card-glass rounded-2xl p-6 border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-dark-800 via-dark-800 to-amber-950/40 shadow-xl">
-        <div className="flex items-start gap-3.5">
-          <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
-            <Building2 className="w-5 h-5" />
+      <div className="rounded-3xl p-6 sm:p-8 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white shadow-clean-md">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-2xl bg-white/20 text-white backdrop-blur-md shrink-0">
+            <Building2 className="w-6 h-6" />
           </div>
           <div>
-            <h4 className="font-bold text-white text-base flex items-center gap-2 flex-wrap">
+            <h4 className="font-black text-white text-lg sm:text-xl flex items-center gap-2 flex-wrap">
               <span>Burger King & Faturamento B2B</span>
-              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-mono">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-bold font-mono backdrop-blur-md">
                 Recebíveis • Lojas • Anexos
               </span>
             </h4>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-amber-100 mt-1 max-w-xl">
               Painel exclusivo para controle de lojas, fotos de fachada, ordens de serviço, comprovantes e fila de recebíveis.
             </p>
           </div>
@@ -517,9 +517,9 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
 
         <button
           onClick={handleOpenCreate}
-          className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold text-xs tracking-wide shadow-md shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
+          className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs tracking-wide shadow-md transition-all hover:scale-105 active:scale-95"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 text-amber-600" />
           Novo Evento BK Express
         </button>
       </div>
@@ -527,73 +527,73 @@ export const BurgerKingPage: React.FC<BurgerKingPageProps> = ({
       {/* KPIs & Métricas Principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Faturado */}
-        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-amber-500/30 transition-all">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">Faturamento Total BK</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+        <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Faturamento Total BK</span>
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/60">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-amber-400">
+          <div className="text-2xl font-black text-slate-900 font-mono">
             {formatCurrencyBRL(metrics.faturadoTotal)}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between font-medium">
             <span>{metrics.totalEventos} apresentações</span>
-            <span className="text-amber-300 font-bold">{metrics.totalLojas} lojas atendidas</span>
+            <span className="text-amber-700 font-bold">{metrics.totalLojas} lojas</span>
           </div>
         </div>
 
         {/* Total Recebido */}
-        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-emerald-500/30 transition-all">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">Total Recebido (Baixado)</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+        <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Total Recebido</span>
+            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/60">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-emerald-400">
+          <div className="text-2xl font-black text-emerald-600 font-mono">
             {formatCurrencyBRL(metrics.recebidoTotal)}
           </div>
-          <div className="text-[11px] text-emerald-400/80 mt-1">
+          <div className="text-[11px] text-emerald-600/90 mt-1 font-semibold">
             Recebimento liquidado em conta
           </div>
         </div>
 
         {/* A Receber (Fila B2B) */}
-        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-cyan-500/30 transition-all">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">A Receber (Fila 30-90D)</span>
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+        <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">A Receber (Fila 30-90D)</span>
+            <div className="p-2.5 rounded-xl bg-sky-50 text-sky-600 border border-sky-200/60">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-cyan-400">
+          <div className="text-2xl font-black text-sky-600 font-mono">
             {formatCurrencyBRL(metrics.aReceberTotal)}
           </div>
-          <div className="text-[11px] text-cyan-400/80 mt-1">
+          <div className="text-[11px] text-sky-600/90 mt-1 font-semibold">
             Fluxo programado de repasses BK
           </div>
         </div>
 
         {/* Em Atraso (>Prazo) */}
-        <div className="p-5 rounded-2xl bg-dark-850 border border-slate-800 hover:border-rose-500/30 transition-all">
-          <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-semibold">Vencidos / Cobrança</span>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+        <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-clean hover:shadow-clean-md transition-all">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Vencidos / Cobrança</span>
+            <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/60">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-black text-rose-400">
+          <div className="text-2xl font-black text-rose-600 font-mono">
             {formatCurrencyBRL(metrics.atrasadoTotal)}
           </div>
-          <div className="text-[11px] text-rose-400/80 mt-1">
+          <div className="text-[11px] text-rose-600/90 mt-1 font-semibold">
             {metrics.atrasadoTotal > 0 ? 'Aguardando repasse da matriz/agência' : 'Nenhum valor em atraso'}
           </div>
         </div>
       </div>
 
       {/* Sub-Aba Switcher & Filtros */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-dark-850/80 border border-slate-800 p-3 rounded-2xl">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-slate-100 p-3 rounded-2xl shadow-clean">
         {/* Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
           <button
