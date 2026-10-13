@@ -13,9 +13,10 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Servir arquivos estáticos da pasta public, assets e data/contracts
+// Servir arquivos estáticos da pasta public, assets, uploads e data/contracts
 app.use('/public', express.static(path.resolve(process.cwd(), 'public')));
 app.use('/assets', express.static(path.resolve(process.cwd(), 'public', 'assets')));
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'public', 'uploads')));
 app.use('/data/contracts', express.static(path.resolve(process.cwd(), 'data', 'contracts')));
 
 // Rotas da API

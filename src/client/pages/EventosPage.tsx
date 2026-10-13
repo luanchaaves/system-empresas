@@ -98,7 +98,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
     endereco: '',
     cidade: 'São Bernardo do Campo',
     estado: 'SP',
-    status: 'AGENDADO',
+    status: 'CONFIRMADO',
     valor_total: 700,
     observacoes: '',
     atracao_ids: [],
@@ -197,8 +197,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       totalHoras += h;
 
       if (ev.status === 'REALIZADO') realizados++;
-      else if (ev.status === 'CONFIRMADO') confirmados++;
-      else if (ev.status === 'AGENDADO') agendados++;
+      else if (ev.status === 'CONFIRMADO' || ev.status === 'AGENDADO') confirmados++;
       else if (ev.status === 'EM_ANDAMENTO') emAndamento++;
       else if (ev.status === 'CANCELADO') cancelados++;
 
@@ -284,7 +283,7 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       endereco: '',
       cidade: 'São Bernardo do Campo',
       estado: 'SP',
-      status: 'AGENDADO',
+      status: 'CONFIRMADO',
       valor_total: initialVal,
       observacoes: '',
       atracao_ids: initialAttIds,
@@ -461,11 +460,6 @@ export const EventosPage: React.FC<EventosPageProps> = ({
   const getStatusBadge = (status: EventStatus) => {
     switch (status) {
       case 'AGENDADO':
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Agendado
-          </span>
-        );
       case 'CONFIRMADO':
         return (
           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
@@ -834,17 +828,23 @@ export const EventosPage: React.FC<EventosPageProps> = ({
       {/* Status Filter Sub-Tabs for List & Table */}
       {viewMode !== 'DASHBOARDS' && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {['TODOS', 'AGENDADO', 'CONFIRMADO', 'EM_ANDAMENTO', 'REALIZADO', 'CANCELADO'].map((st) => (
+          {[
+            { id: 'TODOS', label: 'Todos os Status' },
+            { id: 'CONFIRMADO', label: 'Confirmado' },
+            { id: 'EM_ANDAMENTO', label: 'Em Andamento' },
+            { id: 'REALIZADO', label: 'Realizado' },
+            { id: 'CANCELADO', label: 'Cancelado' },
+          ].map((tab) => (
             <button
-              key={st}
-              onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
-                selectedStatus === st
-                  ? 'bg-slate-700 text-white border border-slate-600'
+              key={tab.id}
+              onClick={() => setSelectedStatus(tab.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 ${
+                selectedStatus === tab.id
+                  ? 'bg-slate-700 text-white font-bold border border-slate-600 shadow-sm'
                   : 'bg-dark-900 text-slate-400 hover:text-slate-200 border border-slate-800'
               }`}
             >
-              {st === 'TODOS' ? 'Todos os Status' : st}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -1360,13 +1360,12 @@ export const EventosPage: React.FC<EventosPageProps> = ({
                 <div>
                   <label className="block text-xs text-slate-300 font-medium mb-1">Status do Evento</label>
                   <select
-                    value={formData.status}
+                    value={formData.status === 'AGENDADO' ? 'CONFIRMADO' : formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as EventStatus })}
                     className="w-full px-3 py-2 text-xs rounded-xl bg-dark-800 border border-slate-700 text-white focus:outline-none focus:border-brand-500"
                   >
-                    <option value="AGENDADO">Agendado (Aguardando Sinal)</option>
-                    <option value="CONFIRMADO">Confirmado (Sinal Pago / Contratado)</option>
-                    <option value="EM_ANDAMENTO">Em Andamento</option>
+                    <option value="CONFIRMADO">Confirmado (Agendado / Contratado)</option>
+                    <option value="EM_ANDAMENTO">Em Andamento / No Show</option>
                     <option value="REALIZADO">Realizado</option>
                     <option value="CANCELADO">Cancelado</option>
                   </select>

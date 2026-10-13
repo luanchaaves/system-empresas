@@ -78,6 +78,15 @@ export interface Attraction {
   updated_at?: string;
 }
 
+export interface EventAttachment {
+  id: string;
+  nome: string;
+  url: string;
+  tipo?: 'FOTO_LOJA' | 'FOTO_EVENTO' | 'COMPROVANTE' | 'DOCUMENTO' | 'OUTRO';
+  tamanho?: number;
+  data_upload: string;
+}
+
 export interface EventAttraction {
   id: number;
   evento_id: number;
@@ -107,12 +116,14 @@ export interface EventDetails {
   contrato_id?: number | null;
   google_event_id?: string;
   
-  // Campos B2B / Burger King
+  // Campos B2B / Burger King & Imagens/Anexos
   canal_b2b?: B2BChannel;
   loja_unidade?: string;
   prazo_pagamento_dias?: number;
   data_previsao_pagamento?: string;
   nota_fiscal_ref?: string;
+  foto_loja_url?: string;
+  anexos?: EventAttachment[];
 
   created_at?: string;
   updated_at?: string;
@@ -235,6 +246,8 @@ export interface CreateEventDTO {
   prazo_pagamento_dias?: number;
   data_previsao_pagamento?: string;
   nota_fiscal_ref?: string;
+  foto_loja_url?: string;
+  anexos?: EventAttachment[];
 }
 
 export interface UpdateEventDTO extends Partial<CreateEventDTO> {
@@ -245,6 +258,8 @@ export interface UpdateEventDTO extends Partial<CreateEventDTO> {
   prazo_pagamento_dias?: number;
   data_previsao_pagamento?: string;
   nota_fiscal_ref?: string;
+  foto_loja_url?: string;
+  anexos?: EventAttachment[];
 }
 
 export interface CreateAttractionDTO {

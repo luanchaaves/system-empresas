@@ -9,6 +9,7 @@ import { AttractionController } from '../controllers/attraction.controller.js';
 import { ClientController } from '../controllers/client.controller.js';
 import { IntegrationController } from '../controllers/integration.controller.js';
 import { CostController } from '../controllers/cost.controller.js';
+import { UploadController } from '../controllers/upload.controller.js';
 import { requireAuth, requireApiKey } from '../middlewares/auth.middleware.js';
 
 export const apiRouter = Router();
@@ -108,6 +109,10 @@ apiRouter.get('/configuracoes', ConfigController.get);
 apiRouter.put('/configuracoes', ConfigController.update);
 apiRouter.post('/configuracoes/gerar-api-key', ConfigController.generateApiKey);
 apiRouter.post('/configuracoes/google-test', ConfigController.testGoogleCalendar);
+
+// 8. Uploads & Gestão de Fotos e Anexos de Lojas
+apiRouter.post('/upload', UploadController.upload);
+apiRouter.put('/lojas/detalhes', UploadController.updateStoreDetails);
 
 // 9. Carga de Eventos das Planilhas
 apiRouter.post('/seed/import-sheet-events', async (_req, res) => {

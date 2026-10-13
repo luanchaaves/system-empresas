@@ -318,25 +318,14 @@ export class ContractService {
       status: dto.status || 'GERADO',
     });
 
-    // 7. Gera automaticamente as duas parcelas no módulo financeiro (se ainda não existirem para o evento)
+    // 7. Vincula contrato aos lançamentos financeiros existentes do evento (sem criar novos para evitar duplicidade)
     const existingFin = FinancialRepository.list({ eventoId });
-    if (existingFin.length === 0) {
-      FinancialService.generateStandardInstallments({
-        eventoId,
-        contratoId: contract.id,
-        clienteId: cliente.id,
-        totalValue: split.valorTotal,
-        eventDate: dto.evento_data,
-        percentualEntrada: split.percentualEntrada,
-        percentualRestante: split.percentualRestante,
-        contratoNumero: contract.numero,
-      });
-    } else {
+    if (existingFin.length > 0) {
       for (const f of existingFin) {
         FinancialRepository.update(f.id, {
           contrato_id: contract.id,
           cliente_id: cliente.id,
-          descricao: f.descricao.includes('Contrato') ? f.descricao : `${f.descricao} - Contrato ${contract.numero}`,
+          descricao: f.descricao.includes(contract.numero) ? f.descricao : `${f.descricao} (Contrato ${contract.numero})`,
         });
       }
     }

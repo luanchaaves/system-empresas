@@ -25,6 +25,7 @@ import {
   ExpenseCategory,
   CostsSummaryDTO,
   B2BChannel,
+  EventAttachment,
 } from '../../types/index.js';
 
 const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
@@ -203,7 +204,7 @@ export function initDatabase(): void {
   // Migrações seguras em eventos
   try { db.exec('ALTER TABLE eventos ADD COLUMN nome_evento TEXT;'); } catch {}
   try { db.exec("ALTER TABLE eventos ADD COLUMN tipo_evento TEXT DEFAULT 'OUTRO';"); } catch {}
-  try { db.exec("ALTER TABLE eventos ADD COLUMN status TEXT NOT NULL DEFAULT 'AGENDADO';"); } catch {}
+  try { db.exec("ALTER TABLE eventos ADD COLUMN status TEXT NOT NULL DEFAULT 'CONFIRMADO';"); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN valor_total REAL NOT NULL DEFAULT 0;'); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN google_event_id TEXT;'); } catch {}
   try { db.exec("ALTER TABLE eventos ADD COLUMN canal_b2b TEXT DEFAULT 'PARTICULAR';"); } catch {}
@@ -211,6 +212,11 @@ export function initDatabase(): void {
   try { db.exec('ALTER TABLE eventos ADD COLUMN prazo_pagamento_dias INTEGER DEFAULT 30;'); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN data_previsao_pagamento TEXT;'); } catch {}
   try { db.exec('ALTER TABLE eventos ADD COLUMN nota_fiscal_ref TEXT;'); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN foto_loja_url TEXT;'); } catch {}
+  try { db.exec('ALTER TABLE eventos ADD COLUMN anexos TEXT;'); } catch {}
+
+  // Unificação de status: Agendado -> Confirmado
+  try { db.exec("UPDATE eventos SET status = 'CONFIRMADO' WHERE status = 'AGENDADO';"); } catch {}
 
   // Índices em eventos
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_eventos_data ON eventos(data);'); } catch {}
@@ -703,15 +709,19 @@ export const EventRepository = {
   },
   create(data: Omit<EventDetails, 'id' | 'created_at' | 'updated_at'>): EventDetails {
     const now = new Date().toISOString();
+    const statusNormalized = (data.status === 'AGENDADO' || !data.status) ? 'CONFIRMADO' : data.status;
+    const anexosStr = data.anexos ? (typeof data.anexos === 'string' ? data.anexos : JSON.stringify(data.anexos)) : null;
+
     const result = db.prepare(`
       INSERT INTO eventos (
         cliente_id, nome_evento, tipo_evento, data, horario, horario_termino,
         endereco, cidade, estado, cep, duracao, status, valor_total,
         observacoes, google_event_id, canal_b2b, loja_unidade,
         prazo_pagamento_dias, data_previsao_pagamento, nota_fiscal_ref,
+        foto_loja_url, anexos,
         created_at, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       data.cliente_id,
       data.nome_evento || '',
@@ -724,7 +734,7 @@ export const EventRepository = {
       data.estado || 'SP',
       data.cep || '',
       data.duracao || 2,
-      data.status || 'AGENDADO',
+      statusNormalized,
       data.valor_total || 0,
       data.observacoes || '',
       data.google_event_id || '',
@@ -733,6 +743,8 @@ export const EventRepository = {
       data.prazo_pagamento_dias || 30,
       data.data_previsao_pagamento || '',
       data.nota_fiscal_ref || '',
+      data.foto_loja_url || null,
+      anexosStr,
       now,
       now
     );
@@ -745,13 +757,17 @@ export const EventRepository = {
     if (!current) throw new Error(`Evento ${id} não encontrado`);
     const now = new Date().toISOString();
     const updated = { ...current, ...data, updated_at: now };
+    const statusNormalized = data.status === 'AGENDADO' ? 'CONFIRMADO' : (data.status || current.status);
+    const anexosStr = data.anexos !== undefined ? (typeof data.anexos === 'string' ? data.anexos : JSON.stringify(data.anexos)) : (current.anexos ? JSON.stringify(current.anexos) : null);
+
     db.prepare(`
       UPDATE eventos
       SET nome_evento = ?, tipo_evento = ?, data = ?, horario = ?, horario_termino = ?,
           endereco = ?, cidade = ?, estado = ?, cep = ?, duracao = ?,
           status = ?, valor_total = ?, observacoes = ?, google_event_id = ?,
           canal_b2b = ?, loja_unidade = ?, prazo_pagamento_dias = ?,
-          data_previsao_pagamento = ?, nota_fiscal_ref = ?, updated_at = ?
+          data_previsao_pagamento = ?, nota_fiscal_ref = ?,
+          foto_loja_url = ?, anexos = ?, updated_at = ?
       WHERE id = ?
     `).run(
       updated.nome_evento || '',
@@ -764,7 +780,7 @@ export const EventRepository = {
       updated.estado || 'SP',
       updated.cep || '',
       updated.duracao,
-      updated.status,
+      statusNormalized,
       updated.valor_total,
       updated.observacoes || '',
       updated.google_event_id || '',
@@ -773,10 +789,37 @@ export const EventRepository = {
       updated.prazo_pagamento_dias || 30,
       updated.data_previsao_pagamento || '',
       updated.nota_fiscal_ref || '',
+      updated.foto_loja_url || null,
+      anexosStr,
       now,
       id
     );
     return this.findById(id)!;
+  },
+  updateStoreDetails(storeName: string, data: { foto_loja_url?: string; anexos?: EventAttachment[] }): void {
+    const now = new Date().toISOString();
+    const cleanStore = storeName.trim();
+    if (data.foto_loja_url !== undefined && data.anexos !== undefined) {
+      const anexosStr = JSON.stringify(data.anexos);
+      db.prepare(`
+        UPDATE eventos
+        SET foto_loja_url = ?, anexos = ?, updated_at = ?
+        WHERE loja_unidade = ? OR endereco = ? OR nome_evento = ?
+      `).run(data.foto_loja_url, anexosStr, now, cleanStore, cleanStore, cleanStore);
+    } else if (data.foto_loja_url !== undefined) {
+      db.prepare(`
+        UPDATE eventos
+        SET foto_loja_url = ?, updated_at = ?
+        WHERE loja_unidade = ? OR endereco = ? OR nome_evento = ?
+      `).run(data.foto_loja_url, now, cleanStore, cleanStore, cleanStore);
+    } else if (data.anexos !== undefined) {
+      const anexosStr = JSON.stringify(data.anexos);
+      db.prepare(`
+        UPDATE eventos
+        SET anexos = ?, updated_at = ?
+        WHERE loja_unidade = ? OR endereco = ? OR nome_evento = ?
+      `).run(anexosStr, now, cleanStore, cleanStore, cleanStore);
+    }
   },
   delete(id: number): boolean {
     const event = this.findById(id);
@@ -807,8 +850,12 @@ export const EventRepository = {
     const params: (string | number)[] = [];
 
     if (filters?.status) {
-      query += ' AND e.status = ?';
-      params.push(filters.status);
+      if (filters.status === 'CONFIRMADO' || (filters.status as string) === 'AGENDADO') {
+        query += " AND (e.status = 'CONFIRMADO' OR e.status = 'AGENDADO')";
+      } else {
+        query += ' AND e.status = ?';
+        params.push(filters.status);
+      }
     }
     if (filters?.canalB2B && filters.canalB2B !== 'TODOS') {
       query += ' AND e.canal_b2b = ?';
@@ -878,6 +925,16 @@ export const EventRepository = {
     }
   },
   mapEventRow(row: Record<string, unknown>): EventDetails {
+    let parsedAnexos: EventAttachment[] = [];
+    if (row.anexos) {
+      try {
+        parsedAnexos = typeof row.anexos === 'string' ? JSON.parse(row.anexos as string) : (row.anexos as any);
+      } catch {}
+    }
+
+    const rawStatus = String(row.status || 'CONFIRMADO');
+    const normalizedStatus = rawStatus === 'AGENDADO' ? 'CONFIRMADO' : (rawStatus as EventStatus);
+
     const event: EventDetails = {
       id: Number(row.id),
       cliente_id: Number(row.cliente_id),
@@ -891,7 +948,7 @@ export const EventRepository = {
       estado: row.estado ? String(row.estado) : 'SP',
       cep: row.cep ? String(row.cep) : undefined,
       duracao: Number(row.duracao || 2),
-      status: (row.status as EventStatus) || 'AGENDADO',
+      status: normalizedStatus,
       valor_total: Number(row.valor_total || 0),
       observacoes: row.observacoes ? String(row.observacoes) : undefined,
       google_event_id: row.google_event_id ? String(row.google_event_id) : undefined,
@@ -900,6 +957,8 @@ export const EventRepository = {
       prazo_pagamento_dias: row.prazo_pagamento_dias !== undefined && row.prazo_pagamento_dias !== null ? Number(row.prazo_pagamento_dias) : 30,
       data_previsao_pagamento: row.data_previsao_pagamento ? String(row.data_previsao_pagamento) : undefined,
       nota_fiscal_ref: row.nota_fiscal_ref ? String(row.nota_fiscal_ref) : undefined,
+      foto_loja_url: row.foto_loja_url ? String(row.foto_loja_url) : undefined,
+      anexos: parsedAnexos,
       created_at: String(row.created_at),
       updated_at: String(row.updated_at),
     };

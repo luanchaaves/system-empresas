@@ -18,15 +18,22 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return next();
   }
 
+  let token = '';
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else if (req.headers['x-auth-token']) {
+    token = String(req.headers['x-auth-token']).trim();
+  } else if (req.query && req.query.token) {
+    token = String(req.query.token).trim();
+  }
+
+  if (!token) {
     res.status(401).json({
       error: 'Não autorizado. Faça login para acessar o sistema.',
     });
     return;
   }
-
-  const token = authHeader.substring(7).trim();
 
   // 1. Verifica se é a API Key da empresa (para integrações / scripts)
   const configuredKey = config.api_key || 'rlp_live_secret_key_2026';

@@ -1,13 +1,11 @@
 node_modules
 dist
 .env
-.env.local
-*.sqlite*
-data/*.sqlite*
 data/contracts/**/*.pdf
 !data/contracts/.gitkeep
-contracts/*.pdf
+data/database.sqlite*
+*.sqlite*
+public/uploads/*
+!public/uploads/.gitkeep
 *.log
 .DS_Store
-Thumbs.db
-

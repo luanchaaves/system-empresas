@@ -136,11 +136,17 @@ export const api = {
   },
 
   async getPreviewHtml(dto: CreateContractDTO): Promise<string> {
+    const token = localStorage.getItem('rlp_auth_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     let res: Response;
     try {
       res = await fetch(`${API_BASE}/preview`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(dto),
       });
     } catch {
@@ -155,11 +161,28 @@ export const api = {
   },
 
   getContractHtmlUrl(id: number): string {
-    return `${API_BASE}/contratos/${id}/html`;
+    const token = localStorage.getItem('rlp_auth_token');
+    return `${API_BASE}/contratos/${id}/html${token ? `?token=${encodeURIComponent(token)}` : ''}`;
   },
 
   getContractPdfUrl(id: number): string {
-    return `${API_BASE}/contratos/${id}/pdf`;
+    const token = localStorage.getItem('rlp_auth_token');
+    return `${API_BASE}/contratos/${id}/pdf${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  },
+
+  // ==================== UPLOADS & ARQUIVOS ====================
+  async uploadFile(payload: { filename: string; base64?: string; dataUrl?: string }): Promise<{ success: boolean; url: string; filename: string; size: number }> {
+    return fetchSafe<{ success: boolean; url: string; filename: string; size: number }>(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async updateStoreDetails(storeName: string, data: { foto_loja_url?: string; anexos?: EventAttachment[] }): Promise<{ success: boolean; message: string }> {
+    return fetchSafe<{ success: boolean; message: string }>(`${API_BASE}/lojas/detalhes`, {
+      method: 'PUT',
+      body: JSON.stringify({ loja_unidade: storeName, ...data }),
+    });
   },
 
   // ==================== EVENTOS & AGENDA ====================
