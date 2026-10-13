@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import { ToastProvider } from './context/ToastContext.js';
 import { LoginPage } from './pages/LoginPage.js';
@@ -15,7 +15,60 @@ import { AtracoesPage } from './pages/AtracoesPage.js';
 import { ClientesPage } from './pages/ClientesPage.js';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage.js';
 import { Client } from '../types/index.js';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary capturou erro:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f2f5fb] p-6 text-slate-800">
+          <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-100 shadow-clean-lg text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-black text-slate-900">Algo inesperado ocorreu</h2>
+            <p className="text-xs text-slate-500">
+              {this.state.error?.message || 'Ocorreu um erro temporário na renderização do painel.'}
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-primary-600 to-indigo-600 text-white font-extrabold text-xs shadow-primary-glow hover:opacity-95 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Recarregar Painel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -123,11 +176,13 @@ const AppContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 
