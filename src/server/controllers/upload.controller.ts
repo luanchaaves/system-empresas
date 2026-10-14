@@ -11,26 +11,30 @@ export const UploadController = {
    */
   async upload(req: Request, res: Response): Promise<void> {
     try {
-      const { filename, base64, dataUrl } = req.body;
+      const body = req.body || {};
+      const { filename, base64, dataUrl } = body;
 
       let fileBuffer: Buffer | null = null;
       let extension = 'png';
       let originalName = 'upload';
 
-      if (dataUrl && typeof dataUrl === 'string') {
-        const matches = dataUrl.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const mime = matches[1];
-          const rawB64 = matches[2];
+      const sourceData = dataUrl || base64;
+
+      if (sourceData && typeof sourceData === 'string') {
+        if (sourceData.includes(';base64,')) {
+          const parts = sourceData.split(';base64,');
+          const mimePart = parts[0];
+          const rawB64 = parts[1];
           fileBuffer = Buffer.from(rawB64, 'base64');
-          if (mime.includes('jpeg') || mime.includes('jpg')) extension = 'jpg';
-          else if (mime.includes('png')) extension = 'png';
-          else if (mime.includes('webp')) extension = 'webp';
-          else if (mime.includes('pdf')) extension = 'pdf';
+          if (mimePart.includes('jpeg') || mimePart.includes('jpg')) extension = 'jpg';
+          else if (mimePart.includes('png')) extension = 'png';
+          else if (mimePart.includes('webp')) extension = 'webp';
+          else if (mimePart.includes('gif')) extension = 'gif';
+          else if (mimePart.includes('pdf')) extension = 'pdf';
+          else if (mimePart.includes('svg')) extension = 'svg';
+        } else {
+          fileBuffer = Buffer.from(sourceData, 'base64');
         }
-      } else if (base64 && typeof base64 === 'string') {
-        const cleanB64 = base64.replace(/^data:[^;]+;base64,/, '');
-        fileBuffer = Buffer.from(cleanB64, 'base64');
       }
 
       if (filename && typeof filename === 'string') {
