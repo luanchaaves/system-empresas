@@ -618,6 +618,12 @@ export const ClientRepository = {
   delete(id: number): boolean {
     const client = this.findById(id);
     if (!client) return false;
+    const eventos = db.prepare('SELECT id FROM eventos WHERE cliente_id = ?').all(id) as { id: number }[];
+    for (const e of eventos) {
+      EventRepository.delete(e.id);
+    }
+    try { db.prepare('DELETE FROM contratos WHERE cliente_id = ?').run(id); } catch {}
+    try { db.prepare('DELETE FROM lancamentos_financeiros WHERE cliente_id = ?').run(id); } catch {}
     db.prepare('DELETE FROM clientes WHERE id = ?').run(id);
     return true;
   },
@@ -824,6 +830,22 @@ export const EventRepository = {
   delete(id: number): boolean {
     const event = this.findById(id);
     if (!event) return false;
+
+    // 1. Remove custos diretos do evento
+    try { db.prepare('DELETE FROM custos_evento WHERE evento_id = ?').run(id); } catch {}
+    // 2. Remove atrações vinculadas ao evento
+    try { db.prepare('DELETE FROM evento_atracoes WHERE evento_id = ?').run(id); } catch {}
+    // 3. Remove lançamentos financeiros vinculados ao evento
+    try { db.prepare('DELETE FROM lancamentos_financeiros WHERE evento_id = ?').run(id); } catch {}
+    // 4. Remove contratos e lançamentos de contratos vinculados ao evento
+    try {
+      const contratos = db.prepare('SELECT id FROM contratos WHERE evento_id = ?').all(id) as { id: number }[];
+      for (const c of contratos) {
+        try { db.prepare('DELETE FROM lancamentos_financeiros WHERE contrato_id = ?').run(c.id); } catch {}
+      }
+      db.prepare('DELETE FROM contratos WHERE evento_id = ?').run(id);
+    } catch {}
+    // 5. Finalmente deleta o evento
     db.prepare('DELETE FROM eventos WHERE id = ?').run(id);
     return true;
   },
@@ -1335,6 +1357,7 @@ export const ContractRepository = {
   delete(id: number): boolean {
     const contract = this.findById(id);
     if (!contract) return false;
+    try { db.prepare('DELETE FROM lancamentos_financeiros WHERE contrato_id = ?').run(id); } catch {}
     db.prepare('DELETE FROM contratos WHERE id = ?').run(id);
     return true;
   },
